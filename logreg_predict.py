@@ -53,7 +53,7 @@ def main():
     means = []
     stds = []
     try:
-        with open('parameters.csv', 'r') as file:
+        with open('predictions/parameters.csv', 'r') as file:
             reader = csv.DictReader(file) # DictRader will skip the header row
             # I just have one row max in this project
             for row in reader:
@@ -70,7 +70,7 @@ def main():
     except SystemExit:
         sys.exit(1)
     except ValueError as exc:
-        print(f"Error when trying to read 'parameters.csv' : {exc}",
+        print(f"Error when trying to read 'predictions/parameters.csv' : {exc}",
               file=sys.stderr)
         sys.exit(1)
 

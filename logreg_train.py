@@ -112,7 +112,7 @@ def main():
 
     # save the models hyperparameters in parameters.csv
     try:
-        with open('parameters.csv', 'w') as file:
+        with open('predictions/parameters.csv', 'w') as file:
             writer = csv.writer(file)
             writer.writerow(["thetas", "means", "stds"])
             for model in models:
@@ -121,7 +121,7 @@ def main():
                 std_str = ','.join([f'{std}' for std in stds])
                 writer.writerow([thetas_str, mean_str, std_str])
     except:
-        print("Error when trying to read 'parameters.csv'", file=sys.stderr)
+        print("Error when trying to read 'predictions/parameters.csv'", file=sys.stderr)
         sys.exit(1)
 
 # -----------------------------------------------------------------------------
