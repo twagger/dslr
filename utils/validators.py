@@ -1,6 +1,5 @@
 """
-The shape decorator raise an exception if the provided shape of a numpy array
-is not the shape that is declared in the dictionnary passed to the decorator
+Decorators to validate types and nd array dimensions
 """
 # -----------------------------------------------------------------------------
 # Module imports
@@ -11,7 +10,6 @@ import numpy as np
 import inspect
 # to keep decorated function doc string
 from functools import wraps
-
 
 # -----------------------------------------------------------------------------
 # helper functions
@@ -114,3 +112,33 @@ def shape_validator(shape_mapping: dict):
             return func(*args, **kwargs)
         return wrapper
     return decorator
+
+
+# -----------------------------------------------------------------------------
+# type validator
+# -----------------------------------------------------------------------------
+# generic type validation based on type annotation in function signature
+def type_validator(func):
+    """
+    Decorator that will rely on the types and attributes declaration in the
+    function signature to check the actual types of the parameter against the
+    expected types
+    """
+    # extract information about the function's parameters and return type.
+    sig = inspect.signature(func)
+    # preserve name and docstring of decorated function
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        # map the parameter from signature to their corresponding values
+        bound_args = sig.bind(*args, **kwargs)
+        # check for each name of param if value has the declared type
+        for name, value in bound_args.arguments.items():
+            if name in sig.parameters:
+                param = sig.parameters[name]
+                if (param.annotation != param.empty
+                        and not isinstance(value, param.annotation)):
+                    raise TypeError(f"function '{func.__name__}' : expected "
+                                    f"type '{param.annotation}' for argument "
+                                    f"'{name}' but got {type(value)}.")
+        return func(*args, **kwargs)
+    return wrapper

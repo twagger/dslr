@@ -12,8 +12,7 @@ import math
 import numpy as np
 # user modules
 sys.path.insert(1, os.path.join(os.path.dirname(__file__), '..', 'utils'))
-from shape_validator import shape_validator
-from type_validator import type_validator
+from validators import shape_validator, type_validator
 
 
 class Metrics():

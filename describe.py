@@ -14,8 +14,8 @@ import numpy as np
 # dataframes
 import pandas as pd
 # user modules
-sys.path.insert(1, os.path.join(os.path.dirname(__file__), '.', 'classes'))
-sys.path.insert(1, os.path.join(os.path.dirname(__file__), '.', 'utils'))
+sys.path.insert(1, os.path.join(os.path.dirname(__file__), 'classes'))
+sys.path.insert(1, os.path.join(os.path.dirname(__file__), 'utils'))
 from Metrics import Metrics
 from preprocessing import get_numeric_features, replace_empty_nan_mean
 
@@ -47,27 +47,30 @@ def main():
         sys.exit(1)
 
     # -------------------------------------------------------------------------
-    # Clean the data : duplicates / empty values / outliers
+    # Clean the data : duplicates / empty values / nan 
     # -------------------------------------------------------------------------
     df_num: pd.DataFrame = get_numeric_features(df)
     replace_empty_nan_mean(df_num)
 
-    # Compute metrics and display
+    # -------------------------------------------------------------------------
+    # Metrics : compute and display
+    # -------------------------------------------------------------------------
     stacked = None
     for i, col in enumerate(df_num.columns):
-        # compute the metrics
+        # Get metrics for a column
         metrics = Metrics(df_num[col].to_numpy().reshape(-1,1))
-        # stack and display (5 per line)
+        # Display when 5 columns
         if i % 5 == 0:
-            print(stacked) if stacked is not None else print("")
+            print(stacked) if stacked is not None else None
             previous = "\n\n\n\n\n\n\n\n"
             stacked = None
+        # Stack
         current = metrics.__str__(first = i % 5 == 0, name=col, sp=15)
         stacked = '\n'.join([prev + curr for prev, curr in
                              zip(previous.split('\n'), current.split('\n'))])
         previous = stacked
-    if stacked is not None:
-        print(stacked)
+    print(stacked) if stacked is not None else None
+        
 
 # -----------------------------------------------------------------------------
 # Call main function

@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 # user modules
 sys.path.insert(1, os.path.join(os.path.dirname(__file__), '..', 'classes'))
-from type_validator import type_validator
+from validators import type_validator
 from Metrics import Metrics
 
 # -----------------------------------------------------------------------------
