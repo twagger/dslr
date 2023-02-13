@@ -127,7 +127,7 @@ def main():
     # set X and y
     X = np.array(df_num).reshape(-1, nb_features)
     # autotest ---- To remove for correction
-    df_2: pd.DataFrame = pd.read_csv("datasets/dataset_truth_1.csv")
+    df_2: pd.DataFrame = pd.read_csv("data/dataset_truth_1.csv")
     y = np.array(df_2['Hogwarts House']).reshape((-1, 1))
 
     # normalize with means and stds from training
