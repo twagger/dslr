@@ -82,7 +82,7 @@ def main():
     # -------------------------------------------------------------------------
     # 0. parameters for training
     alpha = 1e-1 # learning rate
-    max_iter = 2000 # max_iter
+    max_iter = 200 # max_iter
 
     # drop correlated feature
     df_num.drop('Defense Against the Dark Arts', inplace=True, axis=1)
@@ -105,28 +105,60 @@ def main():
 
 
 
-    ## MULTITHREADING
 
-    def threadLogReg (y_train):
-        model = MyLogisticRegression(np.random.rand(nb_features + 1, 1),
-                                     alpha = alpha, max_iter = max_iter)
-        model.fit_(X_norm, y_train, plot=False)
-        return model
+    ## MULTITHREADING START
 
+    # Create plot
+    fig, axes = plt.subplots(nrows=2, ncols=2)
+    axes = axes.flatten()
+
+    # Multithreading
+    import threading
+
+    # Create event to control supervisor function
+    event = threading.Event()
+
+    # Define supervisor function
+    def supervisor ():
+        while not event.is_set():
+            fig.canvas.draw()
+            plt.pause(0.01)
+
+    # Run supervisor to refresh plot
+    t = threading.Thread(target=supervisor)
+    t.start()
+
+    ## MULTIPROCESSING START
+
+    # Multiprocessing
     from multiprocessing.dummy import Pool as ThreadPool
 
-    # Make the Pool of workers
+    # Make pool of workers
     pool = ThreadPool(4)
 
-    # Open the URLs in their own threads
-    # and return the results
-    models = pool.map(threadLogReg, y_trains)
+    # Define multiprocessed function
+    def threadLogReg (y_train, ax):
+        model = MyLogisticRegression(np.random.rand(nb_features + 1, 1),
+                                     alpha = alpha, max_iter = max_iter)
+        model.fit_(X_norm, y_train, plot=True, ax=ax)
+        return model
+
+    # Run logreg function on each y_train in its own thread
+    models = pool.starmap(threadLogReg, zip(y_trains, axes))
 
     # Close the pool and wait for the work to finish
     pool.close()
     pool.join()
 
-    ## MULTITHREADING
+    ## MULTIPROCESSING END
+
+    # Set event to stop supervisor function and join
+    event.set()
+    t.join()
+
+    ## MULTITHREADING END
+
+
 
 
 
