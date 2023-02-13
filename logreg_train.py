@@ -17,7 +17,6 @@ import matplotlib.pyplot as plt
 sys.path.insert(1, os.path.join(os.path.dirname(__file__), 'classes'))
 sys.path.insert(1, os.path.join(os.path.dirname(__file__), 'utils'))
 from MyLogisticRegression import MyLogisticRegression
-from regularization import z_score
 from preprocessing import get_numeric_features, replace_empty_nan_mean
 from standardization import normalize_xset
 
@@ -45,7 +44,6 @@ def main():
     # -------------------------------------------------------------------------
     try:
         df: pd.DataFrame = pd.read_csv(dataset)
-        df: pd.DataFrame = pd.read_csv(dataset)
     except:
         print("error when trying to read dataset", file=sys.stderr)
         sys.exit(1)
@@ -59,8 +57,9 @@ def main():
                  "Divination", "Muggle Studies", "Ancient Runes",
                  "History of Magic", "Transfiguration", "Potions",
                  "Care of Magical Creatures", "Charms", "Flying"]
-    col_types = [float, str, str, str, str, str, float, float, float, float,
-                 float, float, float, float, float, float, float, float, float]
+    col_types = [int, object, object, object, object, object, float, float,
+                 float, float, float, float, float, float, float, float, float,
+                 float, float]
     col_check = zip(col_names, col_types)
 
     # check that the expected columns are here and check their type
@@ -85,11 +84,14 @@ def main():
     alpha = 1e-1 # learning rate
     max_iter = 60 # max_iter
 
+    # drop correlated feature
+    df_num.drop('Defense Against the Dark Arts', inplace=True, axis=1)
+
     # nb features
     nb_features = len(df_num.columns)
 
     # set X and y
-    X = np.array(df_num).reshape((-1, nb_features))
+    X = np.array(df_num).reshape(-1, nb_features)
     y = np.array(df['Hogwarts House']).reshape((-1, 1))
 
     # normalize to ease gradient descent
@@ -104,19 +106,20 @@ def main():
     # create 4 models, each one to detect a specific class
     models = []
     for i in range(4):
-        models[i] = MyLogisticRegression(np.random.rand(nb_features + 1, 1),
-                                         alpha = alpha, max_iter = max_iter)
-        models[i].fit_(X_norm, y_trains[i])
+        models.append(MyLogisticRegression(np.random.rand(nb_features + 1, 1),
+                                           alpha = alpha, max_iter = max_iter))
+        models[i].fit_(X_norm, y_trains[i], plot=True)
 
     # save the models hyperparameters in parameters.csv
     try:
         with open('parameters.csv', 'w') as file:
             writer = csv.writer(file)
-            writer.writerow(["thetas", "standardization params"])
+            writer.writerow(["thetas", "means", "stds"])
             for model in models:
                 thetas_str = ','.join([f'{theta[0]}' for theta in model.thetas])
-                params_str = '/'.join([f'{param[0]},{param[1]}' for param in parameters])
-                writer.writerow([thetas_str, params_str])
+                mean_str = ','.join([f'{param[0]}' for param in parameters])
+                std_str = ','.join([f'{param[1]}' for param in parameters])
+                writer.writerow([thetas_str, mean_str, std_str])
     except:
         print("Error when trying to read 'model.csv'", file=sys.stderr)
         sys.exit(1)

@@ -16,7 +16,7 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 # user modules
 sys.path.insert(1, os.path.join(os.path.dirname(__file__), '..', 'utils'))
-from standardization import l2
+from regularization import l2
 from validators import shape_validator, type_validator
 
 
@@ -157,12 +157,12 @@ class MyLogisticRegression():
             # loop (with plot or progress bar)
             if plot is True:
                 # gradient update in loop with plot of the learning curve
-                fig, axs = plt.figure(1, 1)
+                fig, ax = plt.subplots()
                 # initialize the line plots
-                learn_c, = axs[0].plot([], [], 'r-')
+                learn_c, = ax.plot([], [], 'r-')
                 # label axis
-                axs[0].set_xlabel = 'number of iteration'
-                axs[0].set_ylabel = 'cost'
+                ax.set_xlabel = 'number of iteration'
+                ax.set_ylabel = 'cost'
 
                 for it, _ in enumerate(tqdm(range(self.max_iter))):
                     # calculate current loss
@@ -171,8 +171,8 @@ class MyLogisticRegression():
                     learn_c.set_data(np.append(learn_c.get_xdata(), it),
                                      np.append(learn_c.get_ydata(), loss))
                     # Update the axis limits
-                    axs[0].relim()
-                    axs[0].autoscale_view()
+                    ax.relim()
+                    ax.autoscale_view()
 
                     # Redraw the figure
                     fig.canvas.draw()
@@ -192,7 +192,7 @@ class MyLogisticRegression():
                     gradient = self.gradient_(x, y)
                     # calculate and assign the new thetas
                     self.thetas -= self.alpha * gradient
-            
+
             return self.thetas
         except:
             return None
