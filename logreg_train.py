@@ -106,58 +106,87 @@ def main():
 
 
 
-    ## MULTITHREADING START
 
-    # Create plot
-    fig, axes = plt.subplots(nrows=2, ncols=2)
-    axes = axes.flatten()
+    PLOT = False
 
-    # Multithreading
-    import threading
+    if PLOT:
+        ## MULTITHREADING START
 
-    # Create event to control supervisor function
-    event = threading.Event()
+        # Create plot
+        fig, axes = plt.subplots(nrows=2, ncols=2)
+        axes = axes.flatten()
 
-    # Define supervisor function
-    def supervisor ():
-        while not event.is_set():
-            fig.canvas.draw()
-            plt.pause(0.01)
+        # Multithreading
+        import threading
 
-    # Run supervisor to refresh plot
-    t = threading.Thread(target=supervisor)
-    t.start()
+        # Create event to control supervisor function
+        event = threading.Event()
 
-    ## MULTIPROCESSING START
+        # Define supervisor function
+        def supervisor ():
+            while not event.is_set():
+                fig.canvas.draw()
+                plt.pause(0.01)
 
-    # Multiprocessing
-    from multiprocessing.dummy import Pool as ThreadPool
+        # Run supervisor to refresh plot
+        t = threading.Thread(target=supervisor)
+        t.start()
 
-    # Make pool of workers
-    pool = ThreadPool(4)
+        ## MULTIPROCESSING START
 
-    # Define multiprocessed function
-    def threadLogReg (y_train, ax):
-        model = MyLogisticRegression(np.random.rand(nb_features + 1, 1),
-                                     alpha = alpha, max_iter = max_iter)
-        model.fit_(X_norm, y_train, plot=True, ax=ax)
-        return model
+        # Multiprocessing
+        from multiprocessing.dummy import Pool as ThreadPool
 
-    # Run logreg function on each y_train in its own thread
-    models = pool.starmap(threadLogReg, zip(y_trains, axes))
+        # Make pool of workers
+        pool = ThreadPool(4)
 
-    # Close the pool and wait for the work to finish
-    pool.close()
-    pool.join()
+        # Define multiprocessed function
+        def threadLogReg (y_train, ax):
+            model = MyLogisticRegression(np.random.rand(nb_features + 1, 1),
+                                        alpha = alpha, max_iter = max_iter)
+            model.fit_(X_norm, y_train, plot=True, ax=ax)
+            return model
 
-    ## MULTIPROCESSING END
+        # Run logreg function on each y_train in its own thread
+        models = pool.starmap(threadLogReg, zip(y_trains, axes))
 
-    # Set event to stop supervisor function and join
-    event.set()
-    t.join()
+        # Close the pool and wait for the work to finish
+        pool.close()
+        pool.join()
 
-    ## MULTITHREADING END
+        ## MULTIPROCESSING END
 
+        # Set event to stop supervisor function and join
+        event.set()
+        t.join()
+
+        ## MULTITHREADING END
+    else:
+        ## MULTIPROCESSING START
+
+        max_iter = 20000
+
+        # Multiprocessing
+        from multiprocessing.dummy import Pool as ThreadPool
+
+        # Make pool of workers
+        pool = ThreadPool(4)
+
+        # Define multiprocessed function
+        def threadLogReg (y_train):
+            model = MyLogisticRegression(np.random.rand(nb_features + 1, 1),
+                                        alpha = alpha, max_iter = max_iter)
+            model.fit_(X_norm, y_train, plot=False)
+            return model
+
+        # Run logreg function on each y_train in its own thread
+        models = pool.map(threadLogReg, y_trains)
+
+        # Close the pool and wait for the work to finish
+        pool.close()
+        pool.join()
+
+        ## MULTIPROCESSING END
 
 
 

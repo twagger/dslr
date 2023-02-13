@@ -174,7 +174,7 @@ class MyLogisticRegression():
                     ax.autoscale_view()
 
                     # Wait to make plot visible
-                    time.sleep(0.1)
+                    time.sleep(0.03)
 
                     # calculate the grandient for current thetas
                     gradient = self.gradient_(x, y)
