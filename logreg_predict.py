@@ -17,7 +17,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 # user modules
 sys.path.insert(1, os.path.join(os.path.dirname(__file__), 'classes'))
+sys.path.insert(1, os.path.join(os.path.dirname(__file__), 'utils'))
 from MyLogisticRegression import MyLogisticRegression
+from preprocessing import get_numeric_features, replace_empty_nan_mean
+from standardization import normalize_xset
+from metric_functions import accuracy_score_, precision_score_, \
+                             recall_score_, f1_score_
 
 
 # -----------------------------------------------------------------------------
@@ -41,90 +46,133 @@ def main():
 
     
     # -------------------------------------------------------------------------
-    # Linear regression
+    # Create the multi classifier from the parameters.csv file
     # -------------------------------------------------------------------------
     # 1. Update model thetas, mean, std from file if it exists
     thetas = []
     means = []
-    std = []
+    stds = []
     try:
         with open('parameters.csv', 'r') as file:
             reader = csv.DictReader(file) # DictRader will skip the header row
             # I just have one row max in this project
             for row in reader:
-                thetas.append(np.array([float(theta) for theta 
+                thetas.append(np.array([float(theta) for theta
                               in row['thetas'].split(',')]).reshape(-1, 1))
                 # get mean and standard deviation used in standardization
-                means.append(np.array([float(mean) for mean 
+                means.append(np.array([float(mean) for mean
                              in row['means'].split(',')]).reshape(-1, 1))
                 stds.append(np.array([float(std) for std 
                              in row['stds'].split(',')]).reshape(-1, 1))
-
-            # check that thetas are valid
-            if np.isnan(thetas).any() is True:
-                print('Something when wrong during the training, '
-                      'the parameters are invalid.', file=sys.stderr)
-                sys.exit(1)
 
     except FileNotFoundError:
         sys.exit(1)
     except SystemExit:
         sys.exit(1)
-    except:
-        print("Error when trying to read 'parameters.csv'", file=sys.stderr)
+    except ValueError as exc:
+        print(f"Error when trying to read 'parameters.csv' : {exc}",
+              file=sys.stderr)
         sys.exit(1)
 
-    # 2. create 4 models, one per class to classify
+    # 2. create 4 models with the proper thetas, one per class to classify
     models = []
     for i in range(4):
         models.append(MyLogisticRegression(thetas[i]))
 
-    # 2. predict one value (the prompted one) with standardized mileage
-    mileage_norm = (mileage - mean) / std
-    predicted_price = MyLR.predict_(np.array([[mileage_norm]]))
-
     # -------------------------------------------------------------------------
-    # Display prediction
+    # Open the test dataset and load it
     # -------------------------------------------------------------------------
-    # 3. display the predicted value to the user
-    print(f'For a mileage of {mileage},'
-          f' the predicted price is {predicted_price[0][0]}')
-
-    # -------------------------------------------------------------------------
-    # Plot prediction aside with the training dataset data
-    # -------------------------------------------------------------------------
-    # open and load the training dataset
     try:
-        df = pd.read_csv("./data.csv")
+        df: pd.DataFrame = pd.read_csv(dataset)
     except:
-        print("Error when trying to read dataset", file=sys.stderr)
+        print("error when trying to read dataset", file=sys.stderr)
         sys.exit(1)
+
+    # -------------------------------------------------------------------------
+    # Check the data : presence / type
+    # -------------------------------------------------------------------------
+    col_names = ["Index", "Hogwarts House", "First Name", "Last Name",
+                 "Birthday", "Best Hand", "Arithmancy", "Astronomy",
+                 "Herbology", "Defense Against the Dark Arts",
+                 "Divination", "Muggle Studies", "Ancient Runes",
+                 "History of Magic", "Transfiguration", "Potions",
+                 "Care of Magical Creatures", "Charms", "Flying"]
+    col_types = [int, None, object, object, object, object, float, float,
+                 float, float, float, float, float, float, float, float, float,
+                 float, float]
+    col_check = zip(col_names, col_types)
 
     # check that the expected columns are here and check their type
-    if not set(['km', 'price']).issubset(df.columns):
-        print("Missing columns in 'data.csv' file", file=sys.stderr)
+    if not set(col_names).issubset(df.columns):
+        print(f"Missing columns in '{dataset}' file", file=sys.stderr)
         sys.exit(1)
-    if not (df.km.dtype == float or df.km.dtype == int) \
-            or not (df.price.dtype == float or df.price.dtype == int):
-        print("Wrong column type in 'data.csv' file", file=sys.stderr)
+    for name, type_ in col_check:
+        if not df[name].dtype == type_:
+            print(f"Wrong column type in '{dataset} file", file=sys.stderr)
+            sys.exit(1)
+
+    # -------------------------------------------------------------------------
+    # Clean the data : duplicates / empty values / nan
+    # -------------------------------------------------------------------------
+    df_num: pd.DataFrame = get_numeric_features(df)
+    replace_empty_nan_mean(df_num)
+
+    # drop correlated feature
+    df_num.drop('Defense Against the Dark Arts', inplace=True, axis=1)
+    df_num.drop('Hogwarts House', inplace=True, axis=1)
+
+    # nb features
+    nb_features = len(df_num.columns)
+
+    # set X and y
+    X = np.array(df_num).reshape(-1, nb_features)
+    # autotest ---- To remove for correction
+    df_2: pd.DataFrame = pd.read_csv("datasets/dataset_truth_1.csv")
+    y = np.array(df_2['Hogwarts House']).reshape((-1, 1))
+
+    # normalize with means and stds from training
+    X_norm, _, _ = normalize_xset(X, means, stds)
+
+    # -------------------------------------------------------------------------
+    # Predict
+    # -------------------------------------------------------------------------
+    # prediction with the best group of models on test set
+    predict = np.empty((X.shape[0], 0))
+    for model in models:
+        predict = np.c_[predict, model.predict_(X_norm)]
+    predict = np.argmax(predict, axis=1).reshape((-1, 1))
+
+    # -------------------------------------------------------------------------
+    # Compare with test set labels
+    # -------------------------------------------------------------------------
+    # relabel the test set y to fit with the classes number
+    houses = ["Ravenclaw", "Slytherin", "Gryffindor", "Hufflepuff"]
+    y_nums = y.copy()
+    for num, house in enumerate(houses):
+        y_nums[y_nums == house] = num
+    
+    # print the metrics of the multi classifier
+    for i, house in enumerate(houses):
+        print(f'{house.upper():-<40}')
+        print(f"{'Accuracy score : ':20}"
+              f"{accuracy_score_(y_nums, predict, pos_label=i)}")
+        print(f"{'Precision score : ':20}"
+              f"{precision_score_(y_nums, predict, pos_label=i)}")
+        print(f"{'Recall score : ':20}"
+              f"{recall_score_(y_nums, predict, pos_label=i)}")
+        print(f"{'F1 score : ':20}{f1_score_(y_nums, predict, pos_label=i)}")
+   
+    # output a prediction file
+    try:
+        with open('predictions/houses.csv', 'w') as file:
+            writer = csv.writer(file)
+            writer.writerow(["Index", "Hogwarts House"])
+            for index, prediction in enumerate(predict):
+                writer.writerow([index, houses[int(prediction)]])
+    except:
+        print("Error when trying to read 'houses.csv'", file=sys.stderr)
         sys.exit(1)
 
-    # set x and y
-    x = np.array(df['km']).reshape((-1, 1))
-    y = np.array(df['price']).reshape((-1, 1))
-
-    # normalize x data
-    x_norm = (x - mean) / std
-    y_hat = MyLR.predict_(x_norm)
-
-    # plot
-    plt.figure()
-    plt.scatter(x, y, marker='o', label='training data')
-    plt.scatter(mileage, predicted_price[0][0], marker='o',
-                label='predicted data')
-    plt.plot(x, y_hat, color='red', label='prediction function')
-    plt.legend()
-    plt.show()
 
 # -----------------------------------------------------------------------------
 # Call main function

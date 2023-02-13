@@ -82,7 +82,7 @@ def main():
     # -------------------------------------------------------------------------
     # 0. parameters for training
     alpha = 1e-1 # learning rate
-    max_iter = 60 # max_iter
+    max_iter = 200 # max_iter
 
     # drop correlated feature
     df_num.drop('Defense Against the Dark Arts', inplace=True, axis=1)
@@ -95,7 +95,7 @@ def main():
     y = np.array(df['Hogwarts House']).reshape((-1, 1))
 
     # normalize to ease gradient descent
-    X_norm, parameters = normalize_xset(X)
+    X_norm, means, stds = normalize_xset(X)
 
     # Create label sets to train models
     y_trains = []
@@ -117,11 +117,11 @@ def main():
             writer.writerow(["thetas", "means", "stds"])
             for model in models:
                 thetas_str = ','.join([f'{theta[0]}' for theta in model.thetas])
-                mean_str = ','.join([f'{param[0]}' for param in parameters])
-                std_str = ','.join([f'{param[1]}' for param in parameters])
+                mean_str = ','.join([f'{mean}' for mean in means])
+                std_str = ','.join([f'{std}' for std in stds])
                 writer.writerow([thetas_str, mean_str, std_str])
     except:
-        print("Error when trying to read 'model.csv'", file=sys.stderr)
+        print("Error when trying to read 'parameters.csv'", file=sys.stderr)
         sys.exit(1)
 
 # -----------------------------------------------------------------------------
