@@ -15,19 +15,21 @@ import numpy as np
 import pandas as pd
 # user modules
 sys.path.insert(1, os.path.join(os.path.dirname(__file__), '.', 'classes'))
+sys.path.insert(1, os.path.join(os.path.dirname(__file__), '.', 'utils'))
 from Metrics import Metrics
+from preprocessing import get_numeric_features, replace_empty_nan_mean
 
 
 # -----------------------------------------------------------------------------
 # Program : Describe
 # -----------------------------------------------------------------------------
-if __name__ == "__main__":
+def main():
 
     # -------------------------------------------------------------------------
     # Argument management
     # -------------------------------------------------------------------------
-    # argument management : no argument will be taken in account (display
-    # usage if an argument is provided)
+    # argument management : one argument will be taken in account (display
+    # usage if anything else is provided)
     if len(sys.argv) != 2:
         print("predict: wrong number of arguments\n"
               "Usage: python describe.py /path/to/dataset.csv", file=sys.stderr)
@@ -47,24 +49,28 @@ if __name__ == "__main__":
     # -------------------------------------------------------------------------
     # Clean the data : duplicates / empty values / outliers
     # -------------------------------------------------------------------------
-    # duplicated data : keep only the first
-    df: pd.DataFrame = df[~df.duplicated()]
+    df_num: pd.DataFrame = get_numeric_features(df)
+    replace_empty_nan_mean(df_num)
 
-    # filter non numerical features
-    numeric_features: list = [feature for feature in df.columns
-                              if pd.api.types.is_numeric_dtype(df[feature])]
-    df_num: pd.DataFrame = df[numeric_features].copy()
-
-    # empty values : replace empty values by the mean of the feature, and add
-    # a boolean feature to 'tag' the replaced values (1 if the value has been
-    # re created, 0 else)
-    for col in df_num.columns:
-        # replace nan values with the mean of the feature
-        tmp_mean = pd.Series(df_num[col]).sum() / df_num[col].count()
-        df_num.loc[:, col] = df_num[col].fillna(value=tmp_mean)
+    # Compute metrics and display
+    stacked = None
+    for i, col in enumerate(df_num.columns):
         # compute the metrics
         metrics = Metrics(df_num[col].to_numpy().reshape(-1,1))
-        mean = metrics.mean()
-        print(f'mean: {mean}')
+        # stack and display (5 per line)
+        if i % 5 == 0:
+            print(stacked) if stacked is not None else print("")
+            previous = "\n\n\n\n\n\n\n\n"
+            stacked = None
+        current = metrics.__str__(first = i % 5 == 0, name=col, sp=15)
+        stacked = '\n'.join([prev + curr for prev, curr in
+                             zip(previous.split('\n'), current.split('\n'))])
+        previous = stacked
+    if stacked is not None:
+        print(stacked)
 
-    # outliers
+# -----------------------------------------------------------------------------
+# Call main function
+# -----------------------------------------------------------------------------
+if __name__ == "__main__":
+    main()

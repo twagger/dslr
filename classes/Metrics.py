@@ -26,7 +26,6 @@ class Metrics():
         self.x = x[~np.isnan(x)] # filtering nan values
         self.m, self.n = x.shape
 
-    @type_validator
     def mean(self) -> float:
         """Computes the mean of a given non-empty list or array x"""
         result: float = 0
@@ -35,7 +34,6 @@ class Metrics():
         except:
             return None
 
-    @type_validator
     def median(self) -> float:
         """Computes the median of a given non-empty list or array x"""
         return float(self.percentile(50))
@@ -57,12 +55,10 @@ class Metrics():
         except:
             return None
 
-    @type_validator
     def quartiles(self) -> np.ndarray:
         """Computes the 1st and 3rd quartiles of a given non-empty array x"""
         return ([float(self.percentile(25)), float(self.percentile(75))])
 
-    @type_validator
     def var(self) -> float:
         """computes the variance of a given non-empty list or array x"""
         result = 0
@@ -73,9 +69,39 @@ class Metrics():
         except:
             return None
 
-    @type_validator
     def std(self) -> float:
         """
         computes the standard deviation of a given non-empty list or array x
         """
         return math.sqrt(self.var())
+
+    def __str__(self, first: bool = False, sp: float = 13,
+                name: str = None) -> str:
+        """
+        display metrics
+        """
+        res = (f'{self.mean():{sp}.6f}\n'
+               f'{self.std():{sp}.6f}\n'
+               f'{self.percentile(0):{sp}.6f}\n'
+               f'{self.percentile(25):{sp}.6f}\n'
+               f'{self.percentile(50):{sp}.6f}\n'
+               f'{self.percentile(75):{sp}.6f}\n'
+               f'{self.percentile(100):{sp}.6f}\n')
+
+        if first is True:
+            rows = (f'{"mean":{sp}}\n'
+                    f'{"std":{sp}}\n'
+                    f'{"min":{sp}}\n'
+                    f'{"25%":{sp}}\n'
+                    f'{"50%":{sp}}\n'
+                    f'{"75%":{sp}}\n'
+                    f'{"max":{sp}}\n')
+            res = '\n'.join([col1 + col2 for col1, col2 in
+                                zip(rows.split('\n'), res.split('\n'))])
+        if name is not None:
+            name = name[:sp - 3] + '..' if len(name) > sp else name
+            col_name = (f'{"":{sp}}{name:>{sp}.{sp - 1}}\n' if first is True
+                        else f'{name:>{sp}.{sp - 1}}\n')
+            res = col_name + res
+
+        return res
