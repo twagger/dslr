@@ -1,59 +1,54 @@
-"""Draw a scatter plot for each matter to check features dispertion"""
-# -----------------------------------------------------------------------------
-# Module imports
-# -----------------------------------------------------------------------------
-# system
-import os
-import sys
-# read csv files
-import csv
-# nd arrays
 import numpy as np
-# dataframes
 import pandas as pd
-# user modules
-sys.path.insert(1, os.path.join(os.path.dirname(__file__), '.', 'utils'))
-from preprocessing import get_numeric_features, replace_empty_nan_mean
-
-# -----------------------------------------------------------------------------
-# Program : Scatter plot
-# -----------------------------------------------------------------------------
-def main():
-
-    # -------------------------------------------------------------------------
-    # Argument management
-    # -------------------------------------------------------------------------
-    # argument management : no argument will be taken in account (display
-    # usage if an argument is provided)
-    if len(sys.argv) != 1:
-        print("predict: wrong number of arguments\n"
-              "Usage: python scatter_plot.py", file=sys.stderr)
-        sys.exit()
-
-    # -------------------------------------------------------------------------
-    # Open the dataset and load it
-    # -------------------------------------------------------------------------
-    try:
-        df: pd.DataFrame = pd.read_csv("./datasets/dataset_train.csv")
-    except:
-        print("error when trying to read dataset", file=sys.stderr)
-        sys.exit(1)
+import matplotlib.pyplot as plt
 
 
-    # -------------------------------------------------------------------------
-    # Clean the data : duplicates / empty values
-    # -------------------------------------------------------------------------
-    df_num: pd.DataFrame = get_numeric_features(df)
-    replace_empty_nan_mean(df_num)
-
-    # -------------------------------------------------------------------------
-    # Plot
-    # -------------------------------------------------------------------------
-    
+classes = ['Arithmancy', 'Astronomy', 'Herbology', 'Defense Against the Dark Arts',
+           'Divination', 'Muggle Studies', 'Ancient Runes', 'History of Magic',
+           'Transfiguration', 'Potions', 'Care of Magical Creatures', 'Charms',
+           'Flying']
 
 
-# -----------------------------------------------------------------------------
-# Call main function
-# -----------------------------------------------------------------------------
+# Scatter plot
+def scatter_plot (filename : str):
+    # Read data
+    df = pd.read_csv(filename)
+
+    # Create plot grid
+    _, axes = plt.subplots(nrows=len(classes), ncols=len(classes))
+
+    # Turn grid into array
+    axes = axes.flatten()
+
+    # Compare each class to each class
+    for i, class_x in enumerate(classes):
+        for j, class_y in enumerate(classes):
+            # Select the right subplot
+            ax = axes[i * len(classes) + j]
+
+            # Draw scatter plot
+            ax.scatter(df[class_x], df[class_y], s=3)
+            ax.tick_params(left=False, right=False, labelleft=False, labelbottom=False, bottom=False)
+
+            # Set column titles
+            if i == 0:
+                # Alternate placement for readability
+                if j % 2 == 0:
+                    ax.set_title(class_y, fontsize=12)
+                else:
+                    plt.text(0.5, 1.5, class_y, horizontalalignment='center', fontsize=12, transform = ax.transAxes)
+            
+            # Set line titles
+            if j == 0:
+                # Alternate placement for readability
+                if i % 2 == 0:
+                    ax.set_ylabel(class_x, rotation=90, fontsize=10)
+                else:
+                    plt.text(-0.3, 0.5, class_x, rotation=90, verticalalignment='center', fontsize=10, transform = ax.transAxes)
+
+    # Show plot
+    plt.show()
+
+
 if __name__ == "__main__":
-    main()
+    scatter_plot("data/dataset_train.csv")

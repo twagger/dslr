@@ -1,61 +1,43 @@
-"""Draw a histogram for each matter to compare house distribution"""
-# -----------------------------------------------------------------------------
-# Module imports
-# -----------------------------------------------------------------------------
-# system
-import os
-import sys
-# read csv files
-import csv
-# nd arrays
 import numpy as np
-# dataframes
 import pandas as pd
-# plot
 import matplotlib.pyplot as plt
-# user modules
-sys.path.insert(1, os.path.join(os.path.dirname(__file__), '.', 'utils'))
-from preprocessing import get_numeric_features, replace_empty_nan_mean
-
-# -----------------------------------------------------------------------------
-# Program : Histogram
-# -----------------------------------------------------------------------------
-def main():
-
-    # -------------------------------------------------------------------------
-    # Argument management
-    # -------------------------------------------------------------------------
-    # argument management : no argument will be taken in account (display
-    # usage if an argument is provided)
-    if len(sys.argv) != 1:
-        print("predict: wrong number of arguments\n"
-              "Usage: python histogram.py", file=sys.stderr)
-        sys.exit()
-
-    # -------------------------------------------------------------------------
-    # Open the dataset and load it
-    # -------------------------------------------------------------------------
-    try:
-        df: pd.DataFrame = pd.read_csv("./datasets/dataset_train.csv")
-    except:
-        print("error when trying to read dataset", file=sys.stderr)
-        sys.exit(1)
 
 
-    # -------------------------------------------------------------------------
-    # Clean the data : duplicates / empty values / nan
-    # -------------------------------------------------------------------------
-    df_num: pd.DataFrame = get_numeric_features(df)
-    replace_empty_nan_mean(df_num)
+classes = ['Arithmancy', 'Astronomy', 'Herbology', 'Defense Against the Dark Arts',
+           'Divination', 'Muggle Studies', 'Ancient Runes', 'History of Magic',
+           'Transfiguration', 'Potions', 'Care of Magical Creatures', 'Charms',
+           'Flying']
 
-    # -------------------------------------------------------------------------
-    # Plot
-    # -------------------------------------------------------------------------
-    
+houses = ['Gryffindor', 'Slytherin', 'Ravenclaw', 'Hufflepuff']
+
+colors = ['firebrick', 'lime', 'royalblue', 'gold']
 
 
-# -----------------------------------------------------------------------------
-# Call main function
-# -----------------------------------------------------------------------------
+# Histogram
+def histogram (filename : str):
+    # Read data
+    df = pd.read_csv(filename)
+
+    # Create plot grid
+    _, axes = plt.subplots(nrows=3, ncols=5)
+
+    # Turn grid into array of length [number of features]
+    axes = axes.flatten()[:len(classes)]
+
+    for ax, class_ in zip(axes, classes):
+        # Set title
+        ax.title.set_text(class_)
+        # Draw histogram for each house
+        for house, color in zip(houses, colors):
+            ax.hist(df.loc[df['Hogwarts House'] == house, class_], color=color, alpha=0.75, label=house)
+
+    # Set house legend in corner
+    handles, labels = axes[0].get_legend_handles_labels()
+    plt.legend(handles, labels, loc='center')
+
+    # Show plot
+    plt.show()
+
+
 if __name__ == "__main__":
-    main()
+    histogram("data/dataset_train.csv")

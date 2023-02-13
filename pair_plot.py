@@ -1,61 +1,29 @@
-"""Draw a pair plot for each matter to check for feature correlation"""
-# -----------------------------------------------------------------------------
-# Module imports
-# -----------------------------------------------------------------------------
-# system
-import os
-import sys
-# read csv files
-import csv
-# nd arrays
 import numpy as np
-# dataframes
 import pandas as pd
-# plot
 import seaborn as sns
-# user modules
-sys.path.insert(1, os.path.join(os.path.dirname(__file__), '.', 'utils'))
-from preprocessing import get_numeric_features, replace_empty_nan_mean
-
-# -----------------------------------------------------------------------------
-# Program : Pair plot
-# -----------------------------------------------------------------------------
-def main():
-
-    # -------------------------------------------------------------------------
-    # Argument management
-    # -------------------------------------------------------------------------
-    # argument management : no argument will be taken in account (display
-    # usage if an argument is provided)
-    if len(sys.argv) != 1:
-        print("predict: wrong number of arguments\n"
-              "Usage: python pair_plot.py", file=sys.stderr)
-        sys.exit()
-
-    # -------------------------------------------------------------------------
-    # Open the dataset and load it
-    # -------------------------------------------------------------------------
-    try:
-        df: pd.DataFrame = pd.read_csv("./datasets/dataset_train.csv")
-    except:
-        print("error when trying to read dataset", file=sys.stderr)
-        sys.exit(1)
+import matplotlib.pyplot as plt
 
 
-    # -------------------------------------------------------------------------
-    # Clean the data : duplicates / empty values
-    # -------------------------------------------------------------------------
-    df_num: pd.DataFrame = get_numeric_features(df)
-    replace_empty_nan_mean(df_num)
-
-    # -------------------------------------------------------------------------
-    # Plot
-    # -------------------------------------------------------------------------
-    
+classes = ['Arithmancy', 'Astronomy', 'Herbology', 'Defense Against the Dark Arts',
+           'Divination', 'Muggle Studies', 'Ancient Runes', 'History of Magic',
+           'Transfiguration', 'Potions', 'Care of Magical Creatures', 'Charms',
+           'Flying']
 
 
-# -----------------------------------------------------------------------------
-# Call main function
-# -----------------------------------------------------------------------------
+# Pair plot
+def pair_plot (filename : str):
+    # Read data
+    df = pd.read_csv(filename)
+
+    # Select features
+    df = df[classes]
+
+    # Draw pairplot
+    sns.pairplot(df)
+
+    # Show plot
+    plt.show()
+
+
 if __name__ == "__main__":
-    main()
+    pair_plot("data/dataset_train.csv")
