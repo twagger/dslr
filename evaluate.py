@@ -24,7 +24,7 @@ def load_csv(filename):
     return datas
 
 if __name__ == '__main__':
-    truth = "datasets/dataset_truth_1.csv"
+    truth = "data/dataset_truth_1.csv"
     pred = "predictions/houses.csv"
     if os.path.isfile(truth):
         truths = load_csv(truth)
