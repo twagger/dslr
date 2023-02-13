@@ -82,7 +82,7 @@ def main():
     # -------------------------------------------------------------------------
     # 0. parameters for training
     alpha = 1e-1 # learning rate
-    max_iter = 200 # max_iter
+    max_iter = 20 # max_iter
 
     # drop correlated feature
     df_num.drop('Defense Against the Dark Arts', inplace=True, axis=1)
@@ -103,12 +103,43 @@ def main():
         relabel_log = np.vectorize(lambda x: 1 if x == house else 0)
         y_trains.append(relabel_log(y))
 
+
+
+    def threadLogReg (y_train):
+        model = MyLogisticRegression(np.random.rand(nb_features + 1, 1),
+                                     alpha = alpha, max_iter = max_iter)
+        model.fit_(X_norm, y_train, plot=False)
+        return model
+
     # create 4 models, each one to detect a specific class
     models = []
-    for i in range(4):
-        models.append(MyLogisticRegression(np.random.rand(nb_features + 1, 1),
-                                           alpha = alpha, max_iter = max_iter))
-        models[i].fit_(X_norm, y_trains[i], plot=True)
+    for y_train in y_trains:
+        models.append(threadLogReg(y_train))
+        # models.append(MyLogisticRegression(np.random.rand(nb_features + 1, 1),
+        #                                    alpha = alpha, max_iter = max_iter))
+        # models[i].fit_(X_norm, y_train, plot=True)
+
+
+
+    # from multiprocessing.dummy import Pool as ThreadPool
+
+    # def threadLogReg (y_train):
+    #     model = MyLogisticRegression(np.random.rand(nb_features + 1, 1),
+    #                                  alpha = alpha, max_iter = max_iter)
+    #     return model.fit_(X_norm, y_train, plot=True)
+
+    # # Make the Pool of workers
+    # pool = ThreadPool(4)
+
+    # # Open the URLs in their own threads
+    # # and return the results
+    # models = pool.map(threadLogReg, y_trains)
+
+    # # Close the pool and wait for the work to finish
+    # pool.close()
+    # pool.join()
+
+
 
     # save the models hyperparameters in parameters.csv
     try:
