@@ -28,7 +28,6 @@ from metric_functions import accuracy_score_, precision_score_, \
 # -----------------------------------------------------------------------------
 # Program : Predict
 # -----------------------------------------------------------------------------
-
 def main():
 
     # -------------------------------------------------------------------------
@@ -115,11 +114,13 @@ def main():
     # Clean the data : duplicates / empty values / nan
     # -------------------------------------------------------------------------
     df_num: pd.DataFrame = get_numeric_features(df)
-    replace_empty_nan_mean(df_num)
 
-    # drop correlated feature
+    # drop correlated feature and label
     df_num.drop('Defense Against the Dark Arts', inplace=True, axis=1)
     df_num.drop('Hogwarts House', inplace=True, axis=1)
+
+    # replace empty / nan values
+    replace_empty_nan_mean(df_num)
 
     # nb features
     nb_features = len(df_num.columns)

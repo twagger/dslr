@@ -48,7 +48,7 @@ def replace_empty_nan_mean(df: pd.DataFrame):
     """
     for i, col in enumerate(df.columns):
         # replace nan values with the mean of the feature
-        tmp_mean = pd.Series(df[col]).sum() / df[col].count()
+        tmp_mean = df[col].sum(skipna=True) / df[col].count()
         df.loc[:, col] = df[col].fillna(value=tmp_mean)
 
 
@@ -61,5 +61,5 @@ def replace_empty_nan_median(df: pd.DataFrame) -> pd.DataFrame:
     """
     for i, col in enumerate(df.columns):
         # replace nan values with the median of the feature
-        tmp_med = Metrics(np.array(pd.Series(df[col])).reshape(-1, 1)).median()
+        tmp_med = Metrics(np.array(df[col]).reshape(-1, 1)).median()
         df.loc[:, col] = df[col].fillna(value=tmp_med)

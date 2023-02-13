@@ -150,6 +150,8 @@ class MyLogisticRegression():
         Fits the model to the training dataset contained in x and y.
         """
         try:
+            # epsilon to check if the derivatives are evolving
+            eps = 8e-5
             # calculation of the gradient vector
             m, _ = x.shape
             x_prime = np.c_[np.ones((m, 1)), x]
@@ -182,16 +184,23 @@ class MyLogisticRegression():
 
                     # calculate the grandient for current thetas
                     gradient = self.gradient_(x, y)
-                    # 4. calculate and assign the new thetas
+                    # calculate and assign the new thetas and stop if the change
+                    # of the thetas is less than epsilon
+                    previous_thetas = self.thetas.copy()
                     self.thetas -= self.alpha * gradient
-
+                    if np.sum(np.absolute(self.thetas - previous_thetas)) < eps:
+                        break
             else:
                 # gradient update in loop with tqdm
                 for _ in tqdm(range(self.max_iter)):
                     # calculate the grandient for current thetas
                     gradient = self.gradient_(x, y)
-                    # calculate and assign the new thetas
+                    # calculate and assign the new thetas and stop if the change
+                    # of the thetas is less than epsilon
+                    previous_thetas = self.thetas.copy()
                     self.thetas -= self.alpha * gradient
+                    if np.mean(np.absolute(self.thetas - previous_thetas)) < eps:
+                        break
 
             return self.thetas
         except:

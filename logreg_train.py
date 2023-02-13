@@ -12,13 +12,26 @@ import numpy as np
 # dataframes
 import pandas as pd
 # for plot
+import matplotlib
 import matplotlib.pyplot as plt
+# multi-threading
+import concurrent.futures
 # user modules
 sys.path.insert(1, os.path.join(os.path.dirname(__file__), 'classes'))
 sys.path.insert(1, os.path.join(os.path.dirname(__file__), 'utils'))
 from MyLogisticRegression import MyLogisticRegression
 from preprocessing import get_numeric_features, replace_empty_nan_mean
 from standardization import normalize_xset
+from validators import type_validator, shape_validator
+
+
+# ------------------------------------------------------------------------------
+# Function for multi-threading
+# ------------------------------------------------------------------------------
+@type_validator
+@shape_validator({'X': ('m', 'n'), 'y': ('m', 1)})
+def train_model(model: MyLogisticRegression, X: np.ndarray, y: np.ndarray):
+    model.fit_(X, y, plot=False)
 
 
 # -----------------------------------------------------------------------------
@@ -82,7 +95,7 @@ def main():
     # -------------------------------------------------------------------------
     # 0. parameters for training
     alpha = 1e-1 # learning rate
-    max_iter = 200 # max_iter
+    max_iter = 2000 # max_iter
 
     # drop correlated feature
     df_num.drop('Defense Against the Dark Arts', inplace=True, axis=1)
@@ -103,12 +116,16 @@ def main():
         relabel_log = np.vectorize(lambda x: 1 if x == house else 0)
         y_trains.append(relabel_log(y))
 
-    # create 4 models, each one to detect a specific class
+    # create 4 models : one classifier of a specific class vs all per class
     models = []
     for i in range(4):
         models.append(MyLogisticRegression(np.random.rand(nb_features + 1, 1),
-                                           alpha = alpha, max_iter = max_iter))
-        models[i].fit_(X_norm, y_trains[i], plot=True)
+                                           alpha=alpha, max_iter=max_iter))
+
+    # train 4 models simulteneously
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        for i, model in enumerate(models):
+            executor.submit(train_model, model, X_norm, y_trains[i])
 
     # save the models hyperparameters in parameters.csv
     try:
