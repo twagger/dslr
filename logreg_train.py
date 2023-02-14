@@ -116,20 +116,97 @@ def main():
         relabel_log = np.vectorize(lambda x: 1 if x == house else 0)
         y_trains.append(relabel_log(y))
 
-    # create 4 models : one classifier of a specific class vs all per class
-    models = []
-    for i in range(4):
-        models.append(MyLogisticRegression(np.random.rand(nb_features + 1, 1),
-                                           alpha=alpha, max_iter=max_iter))
 
-    # train 4 models simulteneously
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        for i, model in enumerate(models):
-            executor.submit(train_model, model, X_norm, y_trains[i])
+
+
+
+    PLOT = False
+
+    if PLOT:
+        ## MULTITHREADING START
+
+        # Create plot
+        fig, axes = plt.subplots(nrows=2, ncols=2)
+        axes = axes.flatten()
+
+        # Multithreading
+        import threading
+
+        # Create event to control supervisor function
+        event = threading.Event()
+
+        # Define supervisor function
+        def supervisor ():
+            while not event.is_set():
+                fig.canvas.draw()
+                plt.pause(0.01)
+
+        # Run supervisor to refresh plot
+        t = threading.Thread(target=supervisor)
+        t.start()
+
+        ## MULTIPROCESSING START
+
+        # Multiprocessing
+        from multiprocessing.dummy import Pool as ThreadPool
+
+        # Make pool of workers
+        pool = ThreadPool(4)
+
+        # Define multiprocessed function
+        def threadLogReg (y_train, ax):
+            model = MyLogisticRegression(np.random.rand(nb_features + 1, 1),
+                                        alpha = alpha, max_iter = max_iter)
+            model.fit_(X_norm, y_train, plot=True, ax=ax)
+            return model
+
+        # Run logreg function on each y_train in its own thread
+        models = pool.starmap(threadLogReg, zip(y_trains, axes))
+
+        # Close the pool and wait for the work to finish
+        pool.close()
+        pool.join()
+
+        ## MULTIPROCESSING END
+
+        # Set event to stop supervisor function and join
+        event.set()
+        t.join()
+
+        ## MULTITHREADING END
+    else:
+        ## MULTIPROCESSING START
+
+        max_iter = 20000
+
+        # Multiprocessing
+        from multiprocessing.dummy import Pool as ThreadPool
+
+        # Make pool of workers
+        pool = ThreadPool(4)
+
+        # Define multiprocessed function
+        def threadLogReg (y_train):
+            model = MyLogisticRegression(np.random.rand(nb_features + 1, 1),
+                                        alpha = alpha, max_iter = max_iter)
+            model.fit_(X_norm, y_train, plot=False)
+            return model
+
+        # Run logreg function on each y_train in its own thread
+        models = pool.map(threadLogReg, y_trains)
+
+        # Close the pool and wait for the work to finish
+        pool.close()
+        pool.join()
+
+        ## MULTIPROCESSING END
+
+
+
 
     # save the models hyperparameters in parameters.csv
     try:
-        with open('parameters.csv', 'w') as file:
+        with open('predictions/parameters.csv', 'w') as file:
             writer = csv.writer(file)
             writer.writerow(["thetas", "means", "stds"])
             for model in models:
@@ -138,7 +215,7 @@ def main():
                 std_str = ','.join([f'{std}' for std in stds])
                 writer.writerow([thetas_str, mean_str, std_str])
     except:
-        print("Error when trying to read 'parameters.csv'", file=sys.stderr)
+        print("Error when trying to read 'predictions/parameters.csv'", file=sys.stderr)
         sys.exit(1)
 
 # -----------------------------------------------------------------------------

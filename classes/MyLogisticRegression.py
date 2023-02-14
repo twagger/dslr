@@ -5,6 +5,7 @@
 # system
 import os
 import sys
+import time
 # nd arrays
 import numpy as np
 # for decorators
@@ -145,7 +146,7 @@ class MyLogisticRegression():
     @type_validator
     @shape_validator({'x': ('m', 'n'), 'y': ('m', 1)})
     def fit_(self, x: np.ndarray, y: np.ndarray, 
-             plot: bool = False) -> np.ndarray:
+             plot: bool = False, ax = None) -> np.ndarray:
         """
         Fits the model to the training dataset contained in x and y.
         """
@@ -158,8 +159,6 @@ class MyLogisticRegression():
 
             # loop (with plot or progress bar)
             if plot is True:
-                # gradient update in loop with plot of the learning curve
-                fig, ax = plt.subplots()
                 # initialize the line plots
                 learn_c, = ax.plot([], [], 'r-')
                 # label axis
@@ -176,11 +175,8 @@ class MyLogisticRegression():
                     ax.relim()
                     ax.autoscale_view()
 
-                    # Redraw the figure
-                    fig.canvas.draw()
-
-                    # Pause to make animation visible
-                    plt.pause(0.001)
+                    # Wait to make plot visible
+                    time.sleep(0.03)
 
                     # calculate the grandient for current thetas
                     gradient = self.gradient_(x, y)
