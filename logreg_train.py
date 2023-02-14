@@ -36,10 +36,11 @@ def main():
     # usage if anything else is provided)
     parser = argparse.ArgumentParser(description='train the logistic model')
     parser.add_argument('dataset', type=str, help='training dataset')
-    parser.add_argument('--plot', type=bool, default=False,
-                        help='plot learning curves')
+    parser.add_argument('--plot', action='store_const', const=True,
+                        default=False, help='plot learning curves')
     parser.add_argument('--gd', type=str, default='GD',
-                        help='gradient descent algo (GD, SGD, MBGD')
+                        choices=['GD', 'SGD', 'MBGD'],
+                        help='gradient descent algorithm')
 
     args = parser.parse_args()
     dataset: str = args.dataset
