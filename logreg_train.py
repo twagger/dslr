@@ -14,8 +14,6 @@ import pandas as pd
 # for plot
 import matplotlib
 import matplotlib.pyplot as plt
-# multi-threading
-import concurrent.futures
 # user modules
 sys.path.insert(1, os.path.join(os.path.dirname(__file__), 'classes'))
 sys.path.insert(1, os.path.join(os.path.dirname(__file__), 'utils'))
@@ -26,13 +24,9 @@ from validators import type_validator, shape_validator
 
 
 # ------------------------------------------------------------------------------
-# Function for multi-threading
+# Global params
 # ------------------------------------------------------------------------------
-@type_validator
-@shape_validator({'X': ('m', 'n'), 'y': ('m', 1)})
-def train_model(model: MyLogisticRegression, X: np.ndarray, y: np.ndarray):
-    model.fit_(X, y, plot=False)
-
+GD_TYPE = 'MBGD'
 
 # -----------------------------------------------------------------------------
 # Program : Train
@@ -115,11 +109,7 @@ def main():
     for house in ["Ravenclaw", "Slytherin", "Gryffindor", "Hufflepuff"]:
         relabel_log = np.vectorize(lambda x: 1 if x == house else 0)
         y_trains.append(relabel_log(y))
-
-
-
-
-
+    
     PLOT = False
 
     if PLOT:
@@ -157,7 +147,7 @@ def main():
         def threadLogReg (y_train, ax):
             model = MyLogisticRegression(np.random.rand(nb_features + 1, 1),
                                         alpha = alpha, max_iter = max_iter)
-            model.fit_(X_norm, y_train, plot=True, ax=ax)
+            model.fit_(X_norm, y_train, plot=True, ax=ax, type_=GD_TYPE)
             return model
 
         # Run logreg function on each y_train in its own thread
@@ -177,7 +167,7 @@ def main():
     else:
         ## MULTIPROCESSING START
 
-        max_iter = 20000
+        max_iter = 1000
 
         # Multiprocessing
         from multiprocessing.dummy import Pool as ThreadPool
@@ -189,7 +179,7 @@ def main():
         def threadLogReg (y_train):
             model = MyLogisticRegression(np.random.rand(nb_features + 1, 1),
                                         alpha = alpha, max_iter = max_iter)
-            model.fit_(X_norm, y_train, plot=False)
+            model.fit_(X_norm, y_train, plot=False, type_=GD_TYPE)
             return model
 
         # Run logreg function on each y_train in its own thread
@@ -200,9 +190,6 @@ def main():
         pool.join()
 
         ## MULTIPROCESSING END
-
-
-
 
     # save the models hyperparameters in parameters.csv
     try:
@@ -215,7 +202,8 @@ def main():
                 std_str = ','.join([f'{std}' for std in stds])
                 writer.writerow([thetas_str, mean_str, std_str])
     except:
-        print("Error when trying to read 'predictions/parameters.csv'", file=sys.stderr)
+        print("Error when trying to read 'predictions/parameters.csv'",
+              file=sys.stderr)
         sys.exit(1)
 
 # -----------------------------------------------------------------------------
