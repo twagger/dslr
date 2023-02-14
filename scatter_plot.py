@@ -27,7 +27,7 @@ def scatter_plot (filename : str):
             ax = axes[i * len(classes) + j]
 
             # Draw scatter plot
-            ax.scatter(df[class_x], df[class_y], s=3)
+            ax.scatter(df[class_x], df[class_y], s=8, edgecolor='white', linewidth=0.4)
             ax.tick_params(left=False, right=False, labelleft=False, labelbottom=False, bottom=False)
 
             # Set column titles
@@ -42,9 +42,9 @@ def scatter_plot (filename : str):
             if j == 0:
                 # Alternate placement for readability
                 if i % 2 == 0:
-                    ax.set_ylabel(class_x, rotation=90, fontsize=10)
+                    ax.set_ylabel(class_x, rotation=90, fontsize=8)
                 else:
-                    plt.text(-0.3, 0.5, class_x, rotation=90, verticalalignment='center', fontsize=10, transform = ax.transAxes)
+                    plt.text(-0.3, 0.5, class_x, rotation=90, verticalalignment='center', fontsize=8, transform = ax.transAxes)
 
     # Show plot
     plt.show()

@@ -15,6 +15,9 @@ import pandas as pd
 # for plot
 import matplotlib
 import matplotlib.pyplot as plt
+# multithreading and multiprocessing
+import threading
+from multiprocessing.dummy import Pool as ThreadPool
 # user modules
 sys.path.insert(1, os.path.join(os.path.dirname(__file__), 'classes'))
 sys.path.insert(1, os.path.join(os.path.dirname(__file__), 'utils'))
@@ -41,7 +44,10 @@ def main():
     parser.add_argument('--gd', type=str, default='GD',
                         choices=['GD', 'SGD', 'MBGD'],
                         help='gradient descent algorithm')
-
+    parser.add_argument('--maxiter', type=int, default=1000,
+                        choices=range(1, 100000), metavar='{1...100000}',
+                        help='the number of iterations of the logistic regression')
+    
     args = parser.parse_args()
     dataset: str = args.dataset
     PLOT: bool = args.plot
@@ -90,7 +96,7 @@ def main():
     # -------------------------------------------------------------------------
     # 0. parameters for training
     alpha = 1e-1 # learning rate
-    max_iter = 2000 # max_iter
+    max_iter = args.maxiter # max_iter
 
     # drop correlated feature
     df_num.drop('Defense Against the Dark Arts', inplace=True, axis=1)
@@ -110,85 +116,73 @@ def main():
     for house in ["Ravenclaw", "Slytherin", "Gryffindor", "Hufflepuff"]:
         relabel_log = np.vectorize(lambda x: 1 if x == house else 0)
         y_trains.append(relabel_log(y))
-    
-    if PLOT:
-        ## MULTITHREADING START
 
+    # -------------------------------------------------------------------------
+    # Plotting (plt in thread, with logistic regression in multiprocessing)
+    # -------------------------------------------------------------------------
+    if PLOT:
         # Create plot
         fig, axes = plt.subplots(nrows=2, ncols=2)
         axes = axes.flatten()
 
-        # Multithreading
-        import threading
-
         # Create event to control supervisor function
         event = threading.Event()
 
-        # Define supervisor function
+        # Define plt supervisor function
         def supervisor ():
             while not event.is_set():
+                # Redraw plot
                 fig.canvas.draw()
+                # Wait to make plot visible
                 plt.pause(0.01)
 
         # Run supervisor to refresh plot
         t = threading.Thread(target=supervisor)
         t.start()
 
-        ## MULTIPROCESSING START
-
-        # Multiprocessing
-        from multiprocessing.dummy import Pool as ThreadPool
-
+        # Logistic regression part
         # Make pool of workers
         pool = ThreadPool(4)
 
         # Define multiprocessed function
         def threadLogReg (y_train, ax):
             model = MyLogisticRegression(np.random.rand(nb_features + 1, 1),
-                                        alpha = alpha, max_iter = max_iter)
-            model.fit_(X_norm, y_train, plot=True, ax=ax, type_=GD_TYPE)
+                                         alpha = alpha, max_iter = max_iter)
+            model.fit_(X_norm, y_train, plot = True, ax = ax, gd = GD_TYPE)
             return model
 
-        # Run logreg function on each y_train in its own thread
+        # Run logreg function on each y_train in its own process
         models = pool.starmap(threadLogReg, zip(y_trains, axes))
 
         # Close the pool and wait for the work to finish
         pool.close()
         pool.join()
 
-        ## MULTIPROCESSING END
-
         # Set event to stop supervisor function and join
         event.set()
         t.join()
 
-        ## MULTITHREADING END
+    # -------------------------------------------------------------------------
+    # No plotting (just logistic regression in multiprocessing)
+    # -------------------------------------------------------------------------
     else:
-        ## MULTIPROCESSING START
-
-        max_iter = 1000
-
-        # Multiprocessing
-        from multiprocessing.dummy import Pool as ThreadPool
-
         # Make pool of workers
         pool = ThreadPool(4)
 
         # Define multiprocessed function
         def threadLogReg (y_train):
             model = MyLogisticRegression(np.random.rand(nb_features + 1, 1),
-                                        alpha = alpha, max_iter = max_iter)
-            model.fit_(X_norm, y_train, plot=False, type_=GD_TYPE)
+                                         alpha = alpha, max_iter = max_iter)
+            model.fit_(X_norm, y_train, plot = False, gd = GD_TYPE)
             return model
 
-        # Run logreg function on each y_train in its own thread
+        # Run logreg function on each y_train in its own process
         models = pool.map(threadLogReg, y_trains)
 
         # Close the pool and wait for the work to finish
         pool.close()
         pool.join()
 
-        ## MULTIPROCESSING END
 
     # save the models hyperparameters in parameters.csv
     try:
