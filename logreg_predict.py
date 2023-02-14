@@ -7,6 +7,7 @@ Module to use a model to predict the price of a car according to its mileage
 # system
 import os
 import sys
+import argparse
 # read csv files
 import csv
 # nd arrays
@@ -35,15 +36,12 @@ def main():
     # -------------------------------------------------------------------------
     # argument management : one argument will be taken in account (display
     # usage if anything else is provided)
-    if len(sys.argv) != 2:
-        print("predict: wrong number of arguments\n"
-              "Usage: python logreg_predict.py /path/to/dataset.csv",
-              file=sys.stderr)
-        sys.exit()
-
     dataset: str = sys.argv[1]
+    parser = argparse.ArgumentParser(description='train the logistic model')
+    parser.add_argument('dataset', type=str, help='training dataset')
+    args = parser.parse_args()
+    dataset: str = args.dataset
 
-    
     # -------------------------------------------------------------------------
     # Create the multi classifier from the parameters.csv file
     # -------------------------------------------------------------------------

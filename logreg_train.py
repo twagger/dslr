@@ -5,6 +5,7 @@
 # system
 import os
 import sys
+import argparse
 # read csv files
 import csv
 # nd arrays
@@ -14,8 +15,9 @@ import pandas as pd
 # for plot
 import matplotlib
 import matplotlib.pyplot as plt
-# multi-threading
-import concurrent.futures
+# multithreading and multiprocessing
+import threading
+from multiprocessing.dummy import Pool as ThreadPool
 # user modules
 sys.path.insert(1, os.path.join(os.path.dirname(__file__), 'classes'))
 sys.path.insert(1, os.path.join(os.path.dirname(__file__), 'utils'))
@@ -23,15 +25,6 @@ from MyLogisticRegression import MyLogisticRegression
 from preprocessing import get_numeric_features, replace_empty_nan_mean
 from standardization import normalize_xset
 from validators import type_validator, shape_validator
-
-
-# ------------------------------------------------------------------------------
-# Function for multi-threading
-# ------------------------------------------------------------------------------
-@type_validator
-@shape_validator({'X': ('m', 'n'), 'y': ('m', 1)})
-def train_model(model: MyLogisticRegression, X: np.ndarray, y: np.ndarray):
-    model.fit_(X, y, plot=False)
 
 
 # -----------------------------------------------------------------------------
@@ -44,13 +37,21 @@ def main():
     # -------------------------------------------------------------------------
     # argument management : one argument will be taken in account (display
     # usage if anything else is provided)
-    if len(sys.argv) != 2:
-        print("predict: wrong number of arguments\n"
-              "Usage: python logreg_train.py /path/to/dataset.csv",
-              file=sys.stderr)
-        sys.exit()
-
-    dataset: str = sys.argv[1]
+    parser = argparse.ArgumentParser(description='train the logistic model')
+    parser.add_argument('dataset', type=str, help='training dataset')
+    parser.add_argument('--plot', action='store_const', const=True,
+                        default=False, help='plot learning curves')
+    parser.add_argument('--gd', type=str, default='GD',
+                        choices=['GD', 'SGD', 'MBGD'],
+                        help='gradient descent algorithm')
+    parser.add_argument('--maxiter', type=int, default=1000,
+                        choices=range(1, 100000), metavar='{1...100000}',
+                        help='the number of iterations of the logistic regression')
+    
+    args = parser.parse_args()
+    dataset: str = args.dataset
+    PLOT: bool = args.plot
+    GD_TYPE: str = args.gd
 
     # -------------------------------------------------------------------------
     # Open the training dataset and load it
@@ -95,7 +96,7 @@ def main():
     # -------------------------------------------------------------------------
     # 0. parameters for training
     alpha = 1e-1 # learning rate
-    max_iter = 2000 # max_iter
+    max_iter = args.maxiter # max_iter
 
     # drop correlated feature
     df_num.drop('Defense Against the Dark Arts', inplace=True, axis=1)
@@ -116,92 +117,71 @@ def main():
         relabel_log = np.vectorize(lambda x: 1 if x == house else 0)
         y_trains.append(relabel_log(y))
 
-
-
-
-
-    PLOT = False
-
+    # -------------------------------------------------------------------------
+    # Plotting (plt in thread, with logistic regression in multiprocessing)
+    # -------------------------------------------------------------------------
     if PLOT:
-        ## MULTITHREADING START
-
         # Create plot
         fig, axes = plt.subplots(nrows=2, ncols=2)
         axes = axes.flatten()
 
-        # Multithreading
-        import threading
-
         # Create event to control supervisor function
         event = threading.Event()
 
-        # Define supervisor function
+        # Define plt supervisor function
         def supervisor ():
             while not event.is_set():
+                # Redraw plot
                 fig.canvas.draw()
+                # Wait to make plot visible
                 plt.pause(0.01)
 
         # Run supervisor to refresh plot
         t = threading.Thread(target=supervisor)
         t.start()
 
-        ## MULTIPROCESSING START
-
-        # Multiprocessing
-        from multiprocessing.dummy import Pool as ThreadPool
-
+        # Logistic regression part
         # Make pool of workers
         pool = ThreadPool(4)
 
         # Define multiprocessed function
         def threadLogReg (y_train, ax):
             model = MyLogisticRegression(np.random.rand(nb_features + 1, 1),
-                                        alpha = alpha, max_iter = max_iter)
-            model.fit_(X_norm, y_train, plot=True, ax=ax)
+                                         alpha = alpha, max_iter = max_iter)
+            model.fit_(X_norm, y_train, plot = True, ax = ax, gd = GD_TYPE)
             return model
 
-        # Run logreg function on each y_train in its own thread
+        # Run logreg function on each y_train in its own process
         models = pool.starmap(threadLogReg, zip(y_trains, axes))
 
         # Close the pool and wait for the work to finish
         pool.close()
         pool.join()
 
-        ## MULTIPROCESSING END
-
         # Set event to stop supervisor function and join
         event.set()
         t.join()
 
-        ## MULTITHREADING END
+    # -------------------------------------------------------------------------
+    # No plotting (just logistic regression in multiprocessing)
+    # -------------------------------------------------------------------------
     else:
-        ## MULTIPROCESSING START
-
-        max_iter = 20000
-
-        # Multiprocessing
-        from multiprocessing.dummy import Pool as ThreadPool
-
         # Make pool of workers
         pool = ThreadPool(4)
 
         # Define multiprocessed function
         def threadLogReg (y_train):
             model = MyLogisticRegression(np.random.rand(nb_features + 1, 1),
-                                        alpha = alpha, max_iter = max_iter)
-            model.fit_(X_norm, y_train, plot=False)
+                                         alpha = alpha, max_iter = max_iter)
+            model.fit_(X_norm, y_train, plot = False, gd = GD_TYPE)
             return model
 
-        # Run logreg function on each y_train in its own thread
+        # Run logreg function on each y_train in its own process
         models = pool.map(threadLogReg, y_trains)
 
         # Close the pool and wait for the work to finish
         pool.close()
         pool.join()
-
-        ## MULTIPROCESSING END
-
-
 
 
     # save the models hyperparameters in parameters.csv
@@ -215,7 +195,8 @@ def main():
                 std_str = ','.join([f'{std}' for std in stds])
                 writer.writerow([thetas_str, mean_str, std_str])
     except:
-        print("Error when trying to read 'predictions/parameters.csv'", file=sys.stderr)
+        print("Error when trying to read 'predictions/parameters.csv'",
+              file=sys.stderr)
         sys.exit(1)
 
 # -----------------------------------------------------------------------------
