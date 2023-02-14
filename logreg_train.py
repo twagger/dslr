@@ -5,6 +5,7 @@
 # system
 import os
 import sys
+import argparse
 # read csv files
 import csv
 # nd arrays
@@ -23,11 +24,6 @@ from standardization import normalize_xset
 from validators import type_validator, shape_validator
 
 
-# ------------------------------------------------------------------------------
-# Global params
-# ------------------------------------------------------------------------------
-GD_TYPE = 'MBGD'
-
 # -----------------------------------------------------------------------------
 # Program : Train
 # -----------------------------------------------------------------------------
@@ -38,13 +34,17 @@ def main():
     # -------------------------------------------------------------------------
     # argument management : one argument will be taken in account (display
     # usage if anything else is provided)
-    if len(sys.argv) != 2:
-        print("predict: wrong number of arguments\n"
-              "Usage: python logreg_train.py /path/to/dataset.csv",
-              file=sys.stderr)
-        sys.exit()
+    parser = argparse.ArgumentParser(description='train the logistic model')
+    parser.add_argument('dataset', type=str, help='training dataset')
+    parser.add_argument('--plot', type=bool, default=False,
+                        help='plot learning curves')
+    parser.add_argument('--gd', type=str, default='GD',
+                        help='gradient descent algo (GD, SGD, MBGD')
 
-    dataset: str = sys.argv[1]
+    args = parser.parse_args()
+    dataset: str = args.dataset
+    PLOT: bool = args.plot
+    GD_TYPE: str = args.gd
 
     # -------------------------------------------------------------------------
     # Open the training dataset and load it
@@ -110,8 +110,6 @@ def main():
         relabel_log = np.vectorize(lambda x: 1 if x == house else 0)
         y_trains.append(relabel_log(y))
     
-    PLOT = False
-
     if PLOT:
         ## MULTITHREADING START
 
