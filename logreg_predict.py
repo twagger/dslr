@@ -174,8 +174,8 @@ def main():
             print(f"{'F1 score :':20}{f1_score_(y_nums, predict, pos_label=i)}")
 
     except:
-        print("True labels are not available, please provide a valid file",
-               file=sys.stderr)
+        print("No metrics available : please provide a 'dataset_truth_1.csv' "
+              "file in data/", file=sys.stderr)
         sys.exit(1)
 
 
