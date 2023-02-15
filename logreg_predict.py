@@ -39,8 +39,11 @@ def main():
     dataset: str = sys.argv[1]
     parser = argparse.ArgumentParser(description='train the logistic model')
     parser.add_argument('dataset', type=str, help='training dataset')
+    parser.add_argument('--metrics', action='store_const', const=True,
+                        default=False, help='display model metrics')
     args = parser.parse_args()
     dataset: str = args.dataset
+    metrics: bool = args.metrics
 
     # -------------------------------------------------------------------------
     # Create the multi classifier from the parameters.csv file
@@ -145,38 +148,43 @@ def main():
             writer.writerow(["Index", "Hogwarts House"])
             for index, prediction in enumerate(predict):
                 writer.writerow([index, houses[int(prediction)]])
+        print("\033[32mPrediction file has been created : "
+              "predictions/houses.csv\033[0m")
     except:
-        print(f"Error when trying to read 'houses.csv'", file=sys.stderr)
+        print("Error when trying to read 'houses.csv'", file=sys.stderr)
         sys.exit(1)
 
     # -------------------------------------------------------------------------
     # Compare with true labels if they are available
     # -------------------------------------------------------------------------
     # metrics if the true labels file exists
-    try:
-        df_true: pd.DataFrame = pd.read_csv("data/dataset_truth_1.csv")
-        y = np.array(df_true['Hogwarts House']).reshape((-1, 1))
+    if metrics is True:
+        try:
+            df_true: pd.DataFrame = pd.read_csv("data/dataset_truth_1.csv")
+            y = np.array(df_true['Hogwarts House']).reshape((-1, 1))
 
-        # relabel the test set y to fit with the classes number
-        y_nums = y.copy()
-        for num, house in enumerate(houses):
-            y_nums[y_nums == house] = num
-        
-        # print the metrics of the multi classifier
-        for i, house in enumerate(houses):
-            print(f'{house.upper():-<40}')
-            print(f"{'Accuracy score :':20}"
-                f"{accuracy_score_(y_nums, predict, pos_label=i)}")
-            print(f"{'Precision score :':20}"
-                f"{precision_score_(y_nums, predict, pos_label=i)}")
-            print(f"{'Recall score :':20}"
-                f"{recall_score_(y_nums, predict, pos_label=i)}")
-            print(f"{'F1 score :':20}{f1_score_(y_nums, predict, pos_label=i)}")
+            # relabel the test set y to fit with the classes number
+            y_nums = y.copy()
+            for num, house in enumerate(houses):
+                y_nums[y_nums == house] = num
+            
+            # print the metrics of the multi classifier
+            print(f'\n\033[33mClassifier metrics :\033[0m')
+            for i, house in enumerate(houses):
+                print(f'\033[1m{house.upper():<40}\033[0m')
+                print(f"{'Accuracy score':20}: "
+                      f"{accuracy_score_(y_nums, predict, pos_label=i)}")
+                print(f"{'Precision score':20}: "
+                      f"{precision_score_(y_nums, predict, pos_label=i)}")
+                print(f"{'Recall score':20}: "
+                      f"{recall_score_(y_nums, predict, pos_label=i)}")
+                print(f"{'F1 score':20}: "
+                      f"{f1_score_(y_nums, predict, pos_label=i)}\n")
 
-    except:
-        print("No metrics available : please provide a 'dataset_truth_1.csv' "
-              "file in data/", file=sys.stderr)
-        sys.exit(1)
+        except:
+            print("Metrics option : error, please provide a "
+                  "'dataset_truth_1.csv' file in data/", file=sys.stderr)
+            sys.exit(1)
 
 
 # -----------------------------------------------------------------------------
