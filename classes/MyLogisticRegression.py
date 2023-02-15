@@ -193,6 +193,7 @@ class MyLogisticRegression():
                 ax.set_ylabel = 'cost'
                 progress = tqdm(range(self.max_iter))
                 for it, _ in enumerate(progress):
+                    progress.set_description("Training model ....")
                     # calculate the gradient for current thetas
                     if bool(self.gd_functions[gd](x, y, ax=ax, learn_c=learn_c,
                                                   it=it)) is True:
@@ -206,6 +207,7 @@ class MyLogisticRegression():
                 # gradient update in loop with tqdm
                 progress = tqdm(range(self.max_iter))
                 for it, _ in enumerate(progress):
+                    progress.set_description("Training model ....")
                     # calculate the gradient for current thetas
                     if bool(self.gd_functions[gd](x, y)) is True:
                         progress.set_description("\033[32mModel is trained ! "
