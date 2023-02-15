@@ -62,6 +62,37 @@ def regularize_grad(func):
     return wrapper
 
 
+# yield batches from a np array
+@type_validator
+@shape_validator({'x': ('m', 'n'), 'y': ('m', 1)})
+def get_batches(x: np.ndarray, y: np.ndarray, size: int = 32) -> np.ndarray:
+    """Yields batch of data from original array"""
+    m, n = x.shape
+    if m < size or size <= 0:
+        yield x, y
+    else:
+        start = size * -1
+        stop = size
+        while start != m - 1 and stop != m - 1:
+            start = start + size if start + size < m else m - 1
+            stop = start + size if start + size < m else m - 1
+            yield x[start:stop, :], y[start:stop, :]
+
+
+# shuffle an x and y set
+@type_validator
+@shape_validator({'x': ('m', 'n'), 'y': ('m', 1)})
+def shuffle_set(x: np.ndarray, y: np.ndarray) -> tuple:
+    """Returns a tuple x and y after shuffling"""
+    # stick x and y then shuffle
+    full_set = np.c_[x, y]
+    np.random.shuffle(full_set)
+    # re detach x and y
+    x_shuf = full_set[:, :-1]
+    y_shuf = full_set[:, -1:]
+    return x_shuf, y_shuf
+
+
 # -----------------------------------------------------------------------------
 # MyLogisticRegression class with l2 regularization
 # -----------------------------------------------------------------------------
@@ -81,6 +112,9 @@ class MyLogisticRegression():
         self.thetas = np.array(thetas).reshape((-1, 1))
         self.penalty = penalty
         self.lambda_ = lambda_ if penalty in self.supported_penalties else 0
+        self.gd_functions = {'GD' : self.gradient_descent,
+                             'SGD' : self.stochastic_gradient_descent,
+                             'MBGD' : self.mini_batch_gradient_descent}
 
     @type_validator
     @shape_validator({'x': ('m', 'n')})
@@ -152,7 +186,7 @@ class MyLogisticRegression():
         """
         try:
             # epsilon to check if the derivatives are evolving
-            eps = 8e-5
+            eps = 8e-1
             # calculation of the gradient vector
             m, _ = x.shape
             x_prime = np.c_[np.ones((m, 1)), x]
@@ -165,7 +199,8 @@ class MyLogisticRegression():
                 ax.set_ylabel = 'cost'
                 for it, _ in enumerate(tqdm(range(self.max_iter))):
                     # calculate the gradient for current thetas
-                    if perform_gradient_descent(self, x, y, it=it, type_=gd, ax=ax, learn_c=learn_c) is True:
+                    if self.gd_functions[gd](x, y, ax=ax, learn_c=learn_c,
+                                             it=it) is True:
                         break
             else:
                 # set variable to finish tqdm progress bar
@@ -174,137 +209,95 @@ class MyLogisticRegression():
                 for _ in tqdm(range(self.max_iter)):
                     if not finished:
                         # calculate the gradient for current thetas
-                        if perform_gradient_descent(self, x, y, type_=gd) is True:
+                        if self.gd_functions[gd](x, y) is True:
+                            break
                             finished = False
 
             return self.thetas
         except Exception as e:
+            print(e)
             return None
+    
 
-
-# -----------------------------------------------------------------------------
-# Plot learning curves
-# -----------------------------------------------------------------------------
-@type_validator
-def update_learning_curve(model: MyLogisticRegression, x: np.ndarray,
-                          y: np.ndarray, ax, learn_c, it: int):
-    # calculate current loss
-    loss = model.loss_(y, model.predict_(x))
-    # Update the lines data
-    learn_c.set_data(np.append(learn_c.get_xdata(), it),
-                        np.append(learn_c.get_ydata(), loss))
-    # Update the axis limits
-    ax.relim()
-    ax.autoscale_view()
-
-    # Wait to make plot visible
-    time.sleep(0.03)
-
-
-# -----------------------------------------------------------------------------
-# Helper functions
-# -----------------------------------------------------------------------------
-@type_validator
-@shape_validator({'x': ('m', 'n'), 'y': ('m', 1)})
-def get_batches(x: np.ndarray, y: np.ndarray, size: int = 32) -> np.ndarray:
-    """Yields batch of data from original array"""
-    m, n = x.shape
-    if m < size or size <= 0:
-        yield data
-    else:
-        start = size * -1
-        stop = size
-        while start != m - 1 and stop != m - 1:
-            start = start + size if start + size < m else m - 1
-            stop = start + size if start + size < m else m - 1
-            yield x[start:stop, :], y[start:stop, :]
-
-
-@type_validator
-@shape_validator({'x': ('m', 'n'), 'y': ('m', 1)})
-def shuffle_set(x: np.ndarray, y: np.ndarray) -> tuple:
-    """Returns a tuple x and y after shuffling"""
-    # stick x and y then shuffle
-    full_set = np.c_[x, y]
-    np.random.shuffle(full_set)
-    # re detach x and y
-    x_shuf = full_set[:, :-1]
-    y_shuf = full_set[:, -1:]
-    return x_shuf, y_shuf
-
-
-# -----------------------------------------------------------------------------
-# Parameters optimization functions
-# -----------------------------------------------------------------------------
-# dispatch function
-@type_validator
-def perform_gradient_descent(model: MyLogisticRegression, x: np.ndarray,
-                             y: np.ndarray, it: int = 0, type_: str = 'GD', ax = None, learn_c = None) -> bool:
-    if type_ == 'GD':
-        return gradient_descent(model, x, y, ax = ax, learn_c = learn_c, it = it)
-    elif type_ == 'SGD':
-        return stochastic_gradient_descent(model, x, y, ax = ax, learn_c = learn_c, it = it)
-    elif type_ == 'MBGD':
-        try:
-            return mini_batch_gradient_descent(model, x, y, ax = ax, learn_c = learn_c, it = it)
-        except Exception as exc:
-            print(f'exc : {exc}')
-    else:
-        return True
-
-
-# gradient descent
-@type_validator
-def gradient_descent(model: MyLogisticRegression, x: np.ndarray,
-                     y: np.ndarray, ax = None, learn_c = None, it: int = None) -> bool:
-    # update learning curve
-    if ax is not None and learn_c is not None:
-        update_learning_curve(model, x, y, ax, learn_c, it)
-    # epsilon to check if the derivatives are evolving
-    eps = 8e-5
-    # gradient descent
-    gradient = model.gradient_(x, y)
-    previous_thetas = model.thetas.copy()
-    model.thetas -= model.alpha * gradient
-    # optimization check
-    return np.sum(np.absolute(model.thetas - previous_thetas)) < eps
-
-
-# stochastic gradient descent
-@type_validator
-def stochastic_gradient_descent(model: MyLogisticRegression, x: np.ndarray,
-                                y: np.ndarray, ax = None, learn_c= None, it: int = None) -> bool:
-    # shuffle set
-    x_shuf, y_shuf = shuffle_set(x, y)
-    # loop on every x, and do and save the gradient for each
-    for i in range(x_shuf.shape[0]):
+    # -------------------------------------------------------------------------
+    # Gradient descent algorithms
+    # -------------------------------------------------------------------------    
+    # batch gradient descent
+    @type_validator
+    def gradient_descent(self, x: np.ndarray, y: np.ndarray, ax = None,
+                         learn_c = None, it: int = 0) -> bool:
         # update learning curve
         if ax is not None and learn_c is not None:
-            update_learning_curve(model, x, y, ax, learn_c, it * x_shuf.shape[0] + i)
-        # check the gradient for every loop
-        gradient = model.gradient_(x_shuf[i, :].reshape(1, -1),
-                                   y_shuf[i].reshape(1, 1))
-        previous_thetas = model.thetas.copy()
-        model.thetas -= model.alpha * gradient
-    # no optimization check
-    return False
+            self.update_learning_curve(x, y, ax, learn_c, it)
+        # epsilon to check if the derivatives are evolving
+        eps = 8e-5
+        # gradient descent
+        gradient = self.gradient_(x, y)
+        previous_thetas = self.thetas.copy()
+        self.thetas -= self.alpha * gradient
+        # optimization check
+        return np.sum(np.absolute(self.thetas - previous_thetas)) < eps
 
+    # stochastic gradient descent
+    @type_validator
+    def stochastic_gradient_descent(self, x: np.ndarray, y: np.ndarray,
+                                    ax = None, learn_c= None,
+                                    it: int = 0) -> bool:
+        # shuffle set
+        x_shuf, y_shuf = shuffle_set(x, y)
+        # loop on every x, and do and save the gradient for each
+        for i in range(x_shuf.shape[0]):
+            # current x position for plot
+            x_plot = it * x_shuf.shape[0] + i
+            # update learning curve
+            if ax is not None and learn_c is not None:
+                self.update_learning_curve(x, y, ax, learn_c, x_plot)
+            # check the gradient for every loop
+            gradient = self.gradient_(x_shuf[i, :].reshape(1, -1),
+                                      y_shuf[i].reshape(1, 1))
+            previous_thetas = self.thetas.copy()
+            self.thetas -= self.alpha * gradient
+        # no optimization check
+        return False
 
-@type_validator
-def mini_batch_gradient_descent(model: MyLogisticRegression, x: np.ndarray,
-                                y: np.ndarray, ax = None, learn_c= None, it: int = None) -> bool:
-    # shuffle set
-    x_shuf, y_shuf = shuffle_set(x, y)
-    # loop on every x, and do and save the gradient for each
-    batch_size = 50
-    for index, batch in enumerate(get_batches(x_shuf, y_shuf, size=batch_size)):
-        batch_x, batch_y = batch
-        # update learning curve
-        if ax is not None and learn_c is not None:
-            update_learning_curve(model, x, y, ax, learn_c, (it * x_shuf.shape[0]) // 50 + index)
-        # check the gradient for every loop
-        gradient = model.gradient_(batch_x, batch_y)
-        previous_thetas = model.thetas.copy()
-        model.thetas -= model.alpha * gradient
-    # no optimization check
-    return False
+    # minibatch gradient descent
+    @type_validator
+    def mini_batch_gradient_descent(self, x: np.ndarray, y: np.ndarray,
+                                    ax = None, learn_c= None,
+                                    it: int = 0) -> bool:
+        # shuffle set
+        x_shuf, y_shuf = shuffle_set(x, y)
+        # loop on every x, and do and save the gradient for each
+        batch_size = 50
+        for index, batch in enumerate(get_batches(x_shuf, y_shuf,
+                                      size=batch_size)):
+            batch_x, batch_y = batch
+            # current x position for plot
+            x_plot = (it * x_shuf.shape[0]) // 50 + index
+            # update learning curve
+            if ax is not None and learn_c is not None:
+                self.update_learning_curve(x, y, ax, learn_c, x_plot)
+            # check the gradient for every loop
+            gradient = self.gradient_(batch_x, batch_y)
+            previous_thetas = self.thetas.copy()
+            self.thetas -= self.alpha * gradient
+        # no optimization check
+        return False
+
+    # -------------------------------------------------------------------------
+    # Plot learning curves
+    # -------------------------------------------------------------------------
+    @type_validator
+    def update_learning_curve(self, x: np.ndarray, y: np.ndarray,
+                              ax, learn_c, it: int):
+        # calculate current loss
+        loss = self.loss_(y, self.predict_(x))
+        # Update the lines data
+        learn_c.set_data(np.append(learn_c.get_xdata(), it),
+                         np.append(learn_c.get_ydata(), loss))
+        # Update the axis limits
+        ax.relim()
+        ax.autoscale_view()
+
+        # Wait to make plot visible
+        time.sleep(0.03)
