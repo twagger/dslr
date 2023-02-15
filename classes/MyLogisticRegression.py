@@ -201,7 +201,7 @@ class MyLogisticRegression():
                                                  "\033[0m")
                         break
                     elif it == self.max_iter - 1:
-                        progress.set_description("\033[33mModel isn't optimal"
+                        progress.set_description("\033[33mModel not optimal  "
                                                  "\033[0m")
             else:
                 # gradient update in loop with tqdm
@@ -214,12 +214,11 @@ class MyLogisticRegression():
                                                  "\033[0m")
                         break
                     elif it == self.max_iter - 1:
-                        progress.set_description("\033[33mModel isn't optimal"
+                        progress.set_description("\033[33mModel not optimal  "
                                                  "\033[0m")
 
             return self.thetas
-        except Exception as e:
-            print(e)
+        except:
             return None
 
     # -------------------------------------------------------------------------
@@ -238,7 +237,7 @@ class MyLogisticRegression():
         gradient = self.gradient_(x, y)
         previous_thetas = self.thetas.copy()
         self.thetas -= self.alpha * gradient
-        # optimization check
+        # early stopping if the parameters are not evolving anymore
         return np.sum(np.absolute(self.thetas - previous_thetas)) < eps
 
     # stochastic gradient descent
@@ -260,7 +259,7 @@ class MyLogisticRegression():
                                       y_shuf[i].reshape(1, 1))
             previous_thetas = self.thetas.copy()
             self.thetas -= self.alpha * gradient
-        # no optimization check
+        # no early stopping
         return False
 
     # minibatch gradient descent
@@ -284,7 +283,7 @@ class MyLogisticRegression():
             gradient = self.gradient_(batch_x, batch_y)
             previous_thetas = self.thetas.copy()
             self.thetas -= self.alpha * gradient
-        # no optimization check
+        # no early stopping
         return False
 
     # -------------------------------------------------------------------------
