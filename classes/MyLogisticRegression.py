@@ -185,37 +185,28 @@ class MyLogisticRegression():
         Fits the model to the training dataset contained in x and y.
         """
         try:
+            learn_c = None
             if plot is True:
                 # initialize the line plots
                 learn_c, = ax.plot([], [], 'r-')
                 # label axis
                 ax.set_xlabel = 'number of iteration'
                 ax.set_ylabel = 'cost'
-                progress = tqdm(range(self.max_iter))
-                for it, _ in enumerate(progress):
-                    progress.set_description("Training model ....")
-                    # calculate the gradient for current thetas
-                    if bool(self.gd_functions[gd](x, y, ax=ax, learn_c=learn_c,
-                                                  it=it)) is True:
-                        progress.set_description("\033[32mModel is trained ! "
-                                                 "\033[0m")
-                        break
-                    elif it == self.max_iter - 1:
-                        progress.set_description("\033[33mModel not optimal  "
-                                                 "\033[0m")
-            else:
-                # gradient update in loop with tqdm
-                progress = tqdm(range(self.max_iter))
-                for it, _ in enumerate(progress):
-                    progress.set_description("Training model ....")
-                    # calculate the gradient for current thetas
-                    if bool(self.gd_functions[gd](x, y)) is True:
-                        progress.set_description("\033[32mModel is trained ! "
-                                                 "\033[0m")
-                        break
-                    elif it == self.max_iter - 1:
-                        progress.set_description("\033[33mModel not optimal  "
-                                                 "\033[0m")
+            progress = tqdm(range(self.max_iter))
+            for it, _ in enumerate(progress):
+                progress.set_description("Training model ... ")
+                # calculate the gradient for current thetas
+                if bool(self.gd_functions[gd](x, y, ax=ax, learn_c=learn_c,
+                                              it=it)) is True:
+                    progress.set_description("\033[32mModel is trained ! "
+                                             "\033[0m")
+                    break
+                elif it == self.max_iter - 1 and gd == 'GD':
+                    progress.set_description("\033[33mModel not optimal  "
+                                             "\033[0m")
+                elif it == self.max_iter - 1 and gd != 'GD':
+                    progress.set_description("\033[32mTraining complete !"
+                                             "\033[0m")
 
             return self.thetas
         except:
