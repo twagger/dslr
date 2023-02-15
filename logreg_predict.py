@@ -34,8 +34,6 @@ def main():
     # -------------------------------------------------------------------------
     # Argument management
     # -------------------------------------------------------------------------
-    # argument management : one argument will be taken in account (display
-    # usage if anything else is provided)
     dataset: str = sys.argv[1]
     parser = argparse.ArgumentParser(description='train the logistic model')
     parser.add_argument('dataset', type=str, help='training dataset')

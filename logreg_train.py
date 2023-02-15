@@ -35,8 +35,6 @@ def main():
     # -------------------------------------------------------------------------
     # Argument management
     # -------------------------------------------------------------------------
-    # argument management : one argument will be taken in account (display
-    # usage if anything else is provided)
     parser = argparse.ArgumentParser(description='train the logistic model')
     parser.add_argument('dataset', type=str, help='training dataset')
     parser.add_argument('--plot', action='store_const', const=True,
@@ -46,12 +44,12 @@ def main():
                         help='gradient descent algorithm')
     parser.add_argument('--maxiter', type=int, default=1000,
                         choices=range(1, 100000), metavar='{1...100000}',
-                        help='the number of iterations of the logistic regression')
+                        help='number of iterations of the logistic regression')
     
     args = parser.parse_args()
     dataset: str = args.dataset
-    PLOT: bool = args.plot
-    GD_TYPE: str = args.gd
+    plot: bool = args.plot
+    gd: str = args.gd
 
     # -------------------------------------------------------------------------
     # Open the training dataset and load it
@@ -120,7 +118,7 @@ def main():
     # -------------------------------------------------------------------------
     # Plotting (plt in thread, with logistic regression in multiprocessing)
     # -------------------------------------------------------------------------
-    if PLOT:
+    if plot is True:
         # Create plot
         fig, axes = plt.subplots(nrows=2, ncols=2)
         axes = axes.flatten()
@@ -148,7 +146,7 @@ def main():
         def threadLogReg (y_train, ax):
             model = MyLogisticRegression(np.random.rand(nb_features + 1, 1),
                                          alpha = alpha, max_iter = max_iter)
-            model.fit_(X_norm, y_train, plot = True, ax = ax, gd = GD_TYPE)
+            model.fit_(X_norm, y_train, plot = True, ax = ax, gd = gd)
             return model
 
         # Run logreg function on each y_train in its own process
@@ -173,7 +171,7 @@ def main():
         def threadLogReg (y_train):
             model = MyLogisticRegression(np.random.rand(nb_features + 1, 1),
                                          alpha = alpha, max_iter = max_iter)
-            model.fit_(X_norm, y_train, plot = False, gd = GD_TYPE)
+            model.fit_(X_norm, y_train, plot = False, gd = gd)
             return model
 
         # Run logreg function on each y_train in its own process
@@ -183,17 +181,18 @@ def main():
         pool.close()
         pool.join()
 
-
-    # save the models hyperparameters in parameters.csv
+    # -------------------------------------------------------------------------
+    # Saving hyperparameters adjusted with the training
+    # -------------------------------------------------------------------------
     try:
         with open('predictions/parameters.csv', 'w') as file:
             writer = csv.writer(file)
             writer.writerow(["thetas", "means", "stds"])
             for model in models:
-                thetas_str = ','.join([f'{theta[0]}' for theta in model.thetas])
+                theta_str = ','.join([f'{theta[0]}' for theta in model.thetas])
                 mean_str = ','.join([f'{mean}' for mean in means])
                 std_str = ','.join([f'{std}' for std in stds])
-                writer.writerow([thetas_str, mean_str, std_str])
+                writer.writerow([theta_str, mean_str, std_str])
     except:
         print("Error when trying to read 'predictions/parameters.csv'",
               file=sys.stderr)
