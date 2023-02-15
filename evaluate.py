@@ -44,5 +44,7 @@ if __name__ == '__main__':
     print("Your score on test set: %.3f" % score)
     if score >= .98:
         print("Good job! Mc Gonagall congratulates you.")
+        sys.exit(0)
     else:
         print("Too bad, Mc Gonagall flunked you.")
+        sys.exit(1)

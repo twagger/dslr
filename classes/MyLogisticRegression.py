@@ -193,19 +193,23 @@ class MyLogisticRegression():
                 ax.set_xlabel = 'number of iteration'
                 ax.set_ylabel = 'cost'
             progress = tqdm(range(self.max_iter))
+            progress.set_description(" Training model...      ")
+            trained = False
             for it, _ in enumerate(progress):
-                progress.set_description("Training model ... ")
                 # calculate the gradient for current thetas
-                if bool(self.gd_functions[gd](x, y, ax=ax, learn_c=learn_c,
+                if trained:
+                    pass
+                elif bool(self.gd_functions[gd](x, y, ax=ax, learn_c=learn_c,
                                               it=it)) is True:
-                    progress.set_description("\033[32mModel is trained ! "
+                    progress.set_description(f"\033[32m{ f' Trained in {it} iters' :<24}"
                                              "\033[0m")
-                    break
+                    trained = True
                 elif it == self.max_iter - 1 and gd == 'GD':
-                    progress.set_description("\033[33mModel not optimal  "
+                    progress.set_description("\033[33m Model not optimal...   "
                                              "\033[0m")
                 elif it == self.max_iter - 1 and gd != 'GD':
-                    progress.set_description("\033[32mTraining complete !"
+                    pass
+                    progress.set_description("\033[32m Training complete !    "
                                              "\033[0m")
 
             return self.thetas
