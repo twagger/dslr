@@ -185,43 +185,38 @@ class MyLogisticRegression():
         Fits the model to the training dataset contained in x and y.
         """
         try:
-            # epsilon to check if the derivatives are evolving
-            eps = 8e-1
-            # calculation of the gradient vector
-            m, _ = x.shape
-            x_prime = np.c_[np.ones((m, 1)), x]
-            # loop (with plot or progress bar)
             if plot is True:
                 # initialize the line plots
                 learn_c, = ax.plot([], [], 'r-')
                 # label axis
                 ax.set_xlabel = 'number of iteration'
                 ax.set_ylabel = 'cost'
-                for it, _ in enumerate(tqdm(range(self.max_iter))):
+                progress = tqdm(range(self.max_iter))
+                for it, _ in enumerate(progress):
                     # calculate the gradient for current thetas
-                    if self.gd_functions[gd](x, y, ax=ax, learn_c=learn_c,
-                                             it=it) is True:
+                    if bool(self.gd_functions[gd](x, y, ax=ax, learn_c=learn_c,
+                                                  it=it)) is True:
+                        progress.set_description("\033[32mModel is trained !"
+                                                 "\033[0m")
                         break
             else:
-                # set variable to finish tqdm progress bar
-                finished = False
                 # gradient update in loop with tqdm
-                for _ in tqdm(range(self.max_iter)):
-                    if not finished:
-                        # calculate the gradient for current thetas
-                        if self.gd_functions[gd](x, y) is True:
-                            break
-                            finished = False
+                progress = tqdm(range(self.max_iter))
+                for _ in progress:
+                    # calculate the gradient for current thetas
+                    if bool(self.gd_functions[gd](x, y)) is True:
+                        progress.set_description("\033[32mModel is trained !"
+                                                 "\033[0m")
+                        break
 
             return self.thetas
         except Exception as e:
             print(e)
             return None
-    
 
     # -------------------------------------------------------------------------
     # Gradient descent algorithms
-    # -------------------------------------------------------------------------    
+    # -------------------------------------------------------------------------
     # batch gradient descent
     @type_validator
     def gradient_descent(self, x: np.ndarray, y: np.ndarray, ax = None,
@@ -230,7 +225,7 @@ class MyLogisticRegression():
         if ax is not None and learn_c is not None:
             self.update_learning_curve(x, y, ax, learn_c, it)
         # epsilon to check if the derivatives are evolving
-        eps = 8e-5
+        eps = 8e-4
         # gradient descent
         gradient = self.gradient_(x, y)
         previous_thetas = self.thetas.copy()
