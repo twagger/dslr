@@ -31,6 +31,8 @@ from metric_functions import accuracy_score_, precision_score_, \
 # -----------------------------------------------------------------------------
 def main():
 
+    houses = ["Ravenclaw", "Slytherin", "Gryffindor", "Hufflepuff"]
+
     # -------------------------------------------------------------------------
     # Argument management
     # -------------------------------------------------------------------------
@@ -123,9 +125,6 @@ def main():
 
     # set X and y
     X = np.array(df_num).reshape(-1, nb_features)
-    # autotest ---- To remove for correction
-    df_2: pd.DataFrame = pd.read_csv("data/dataset_truth_1.csv")
-    y = np.array(df_2['Hogwarts House']).reshape((-1, 1))
 
     # normalize with means and stds from training
     X_norm, _, _ = normalize_xset(X, means, stds)
@@ -139,26 +138,6 @@ def main():
         predict = np.c_[predict, model.predict_(X_norm)]
     predict = np.argmax(predict, axis=1).reshape((-1, 1))
 
-    # -------------------------------------------------------------------------
-    # Compare with test set labels
-    # -------------------------------------------------------------------------
-    # relabel the test set y to fit with the classes number
-    houses = ["Ravenclaw", "Slytherin", "Gryffindor", "Hufflepuff"]
-    y_nums = y.copy()
-    for num, house in enumerate(houses):
-        y_nums[y_nums == house] = num
-    
-    # print the metrics of the multi classifier
-    for i, house in enumerate(houses):
-        print(f'{house.upper():-<40}')
-        print(f"{'Accuracy score : ':20}"
-              f"{accuracy_score_(y_nums, predict, pos_label=i)}")
-        print(f"{'Precision score : ':20}"
-              f"{precision_score_(y_nums, predict, pos_label=i)}")
-        print(f"{'Recall score : ':20}"
-              f"{recall_score_(y_nums, predict, pos_label=i)}")
-        print(f"{'F1 score : ':20}{f1_score_(y_nums, predict, pos_label=i)}")
-   
     # output a prediction file
     try:
         with open('predictions/houses.csv', 'w') as file:
@@ -167,7 +146,36 @@ def main():
             for index, prediction in enumerate(predict):
                 writer.writerow([index, houses[int(prediction)]])
     except:
-        print("Error when trying to read 'houses.csv'", file=sys.stderr)
+        print(f"Error when trying to read 'houses.csv'", file=sys.stderr)
+        sys.exit(1)
+
+    # -------------------------------------------------------------------------
+    # Compare with true labels if they are available
+    # -------------------------------------------------------------------------
+    # metrics if the true labels file exists
+    try:
+        df_true: pd.DataFrame = pd.read_csv("data/dataset_truth_1.csv")
+        y = np.array(df_true['Hogwarts House']).reshape((-1, 1))
+
+        # relabel the test set y to fit with the classes number
+        y_nums = y.copy()
+        for num, house in enumerate(houses):
+            y_nums[y_nums == house] = num
+        
+        # print the metrics of the multi classifier
+        for i, house in enumerate(houses):
+            print(f'{house.upper():-<40}')
+            print(f"{'Accuracy score :':20}"
+                f"{accuracy_score_(y_nums, predict, pos_label=i)}")
+            print(f"{'Precision score :':20}"
+                f"{precision_score_(y_nums, predict, pos_label=i)}")
+            print(f"{'Recall score :':20}"
+                f"{recall_score_(y_nums, predict, pos_label=i)}")
+            print(f"{'F1 score :':20}{f1_score_(y_nums, predict, pos_label=i)}")
+
+    except:
+        print("True labels are not available, please provide a valid file",
+               file=sys.stderr)
         sys.exit(1)
 
 
