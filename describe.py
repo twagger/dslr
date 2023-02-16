@@ -74,7 +74,11 @@ def display (data):
 # Describe
 def describe (filename : str):
     # Read data
-    df = pd.read_csv(filename)
+    try:
+        df = pd.read_csv(filename)
+    except:
+        print("error when trying to read dataset", file=sys.stderr)
+        sys.exit(1)
 
     # Get analysis for each numeric column
     stats = [analyze_feature(df[col]) for col in df if pd.api.types.is_numeric_dtype(df[col])]

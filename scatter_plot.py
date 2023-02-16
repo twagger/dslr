@@ -12,7 +12,11 @@ classes = ['Arithmancy', 'Astronomy', 'Herbology', 'Defense Against the Dark Art
 # Scatter plot
 def scatter_plot (filename : str):
     # Read data
-    df = pd.read_csv(filename)
+    try:
+        df = pd.read_csv(filename)
+    except:
+        print("error when trying to read dataset", file=sys.stderr)
+        sys.exit(1)
 
     # Create plot grid
     _, axes = plt.subplots(nrows=len(classes), ncols=len(classes))
