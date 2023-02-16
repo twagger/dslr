@@ -13,7 +13,11 @@ classes = ['Arithmancy', 'Astronomy', 'Herbology', 'Defense Against the Dark Art
 # Pair plot
 def pair_plot (filename : str):
     # Read data
-    df = pd.read_csv(filename)
+    try:
+        df = pd.read_csv(filename)
+    except:
+        print("error when trying to read dataset", file=sys.stderr)
+        sys.exit(1)
 
     # Select features
     df = df[classes]
