@@ -4,10 +4,10 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 
-classes = ['Arithmancy', 'Astronomy', 'Herbology', 'Defense Against the Dark Arts',
-           'Divination', 'Muggle Studies', 'Ancient Runes', 'History of Magic',
-           'Transfiguration', 'Potions', 'Care of Magical Creatures', 'Charms',
-           'Flying']
+classes = ['Hogwarts House', 'Arithmancy', 'Astronomy', 'Herbology',
+           'Defense Against the Dark Arts', 'Divination', 'Muggle Studies',
+           'Ancient Runes', 'History of Magic', 'Transfiguration', 'Potions',
+           'Care of Magical Creatures', 'Charms', 'Flying']
 
 
 # Pair plot
@@ -18,12 +18,12 @@ def pair_plot (filename : str):
     except:
         print("error when trying to read dataset", file=sys.stderr)
         sys.exit(1)
-
+    
     # Select features
     df = df[classes]
 
     # Draw pairplot
-    sns.pairplot(df)
+    sns.pairplot(df, hue="Hogwarts House", diag_kind="hist")
 
     # Show plot
     plt.show()

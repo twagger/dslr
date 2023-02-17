@@ -116,9 +116,15 @@ def main():
     # -------------------------------------------------------------------------
     df_num: pd.DataFrame = get_numeric_features(df)
 
-    # drop correlated feature and label
-    df_num.drop('Defense Against the Dark Arts', inplace=True, axis=1)
+    # drop labels
     df_num.drop('Hogwarts House', inplace=True, axis=1)
+
+    # drop correlated feature
+    df_num.drop('Defense Against the Dark Arts', inplace=True, axis=1)
+
+    # drop the features that don't allow to distinguish classes
+    df_num.drop('Arithmancy', inplace=True, axis=1)
+    df_num.drop('Care of Magical Creatures', inplace=True, axis=1)
 
     # replace empty / nan values
     replace_empty_nan_mean(df_num)
