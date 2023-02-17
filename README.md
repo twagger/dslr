@@ -76,6 +76,7 @@ python3 pair_plot.py
 ```
 
 ![histogram.py](doc/histogram.png)
+
 ![describe.py](doc/pair_plot.png)
 
 ## Logistic regression
