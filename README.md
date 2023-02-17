@@ -84,7 +84,11 @@ python3 pair_plot.py
 
 ### Data preparation
 
-After the data analysis phase, we decided to **remove one feature**, highly correlated with another one, and to apply **z-score normalization** on the data.
+After the data analysis phase, we decided to :
+
+- **remove one feature**, highly correlated with another one
+- **remove two features**, that have a uniform distribution among different houses
+- apply **z-score normalization** on the data
 
 We also chose to replace `nan` and empty values in the dataset with the `mean` value of the feature.
 
