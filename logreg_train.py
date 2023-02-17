@@ -96,8 +96,12 @@ def main():
     alpha = 1e-1 # learning rate
     max_iter = args.maxiter # max_iter
 
-    # drop correlated feature
+    # drop one of the correlated feature
     df_num.drop('Defense Against the Dark Arts', inplace=True, axis=1)
+
+    # drop the features that don't allow to distinguish classes
+    df_num.drop('Arithmancy', inplace=True, axis=1)
+    df_num.drop('Care of Magical Creatures', inplace=True, axis=1)
 
     # nb features
     nb_features = len(df_num.columns)
