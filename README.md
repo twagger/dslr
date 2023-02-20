@@ -173,7 +173,6 @@ Sone metrics are particularly useful when it comes to logistic regression :
 * Matplotlib
 * Seaborn
 * tqdm
-* threading
 
 # Resources
 
